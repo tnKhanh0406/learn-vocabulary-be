@@ -5,35 +5,36 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+@Table(name = "folders")
 @Entity
-@Table(name = "words")
-@Getter
-@Setter
-public class WordEntity {
-
+@Getter @Setter
+public class FolderEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String english;
+    private String name;
 
-    @Column(nullable = false)
-    private String vietnamese;
-
-    private String imageUrl;
-    private String audioUrl;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @ManyToOne
-    @JoinColumn(name = "deck_id", nullable = false)
-    private DeckEntity deck;
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
+
+    @OneToMany(mappedBy = "folder")
+    private List<DeckEntity> decks = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
+
 }
