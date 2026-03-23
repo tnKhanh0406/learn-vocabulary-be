@@ -23,6 +23,11 @@ public class FolderController {
         return folderService.getAllFolders();
     }
 
+    @GetMapping("/{folderId}")
+    public FolderResponse getFolderById(@PathVariable Long folderId) {
+        return folderService.getFolderById(folderId);
+    }
+
     @PostMapping
     public ResponseEntity<FolderResponse> createFolder(@RequestBody FolderRequest request) {
         FolderResponse response = folderService.createFolder(request);

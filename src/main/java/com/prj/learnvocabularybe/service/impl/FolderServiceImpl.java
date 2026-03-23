@@ -31,6 +31,18 @@ public class FolderServiceImpl implements FolderService {
     }
 
     @Override
+    public FolderResponse getFolderById(Long folderId) {
+        FolderEntity folderEntity = folderRepository.findById(folderId)
+                .orElseThrow(() -> new RuntimeException("Folder not found with id: " + folderId));
+        return new FolderResponse(
+                folderEntity.getId(),
+                folderEntity.getName(),
+                folderEntity.getDescription(),
+                deckRepository.findDeckSummariesByFolderId(folderId)
+        );
+    }
+
+    @Override
     public FolderResponse createFolder(FolderRequest request) {
         FolderEntity folderEntity = new FolderEntity();
         folderEntity.setName(request.name());

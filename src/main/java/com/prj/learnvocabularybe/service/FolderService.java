@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface FolderService {
     List<FolderSummaryResponse> getAllFolders();
+    FolderResponse getFolderById(Long folderId);
     FolderResponse createFolder(FolderRequest request);
     FolderResponse updateFolder(Long folderId, FolderRequest request);
     void deleteFolder(Long folderId);
