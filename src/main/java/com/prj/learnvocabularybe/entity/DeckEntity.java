@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Table(name = "decks")
@@ -40,9 +41,13 @@ public class DeckEntity {
     @JoinColumn(name = "copied_from_deck_id")
     private DeckEntity copiedFromDeck;
 
-    @OneToMany
-    @JoinColumn(name = "deck_id")
-    private List<WordEntity> words;
+    @OneToMany(mappedBy = "deck", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WordEntity> words = new ArrayList<>();
+
+    public void addWord(WordEntity word) {
+        this.words.add(word);
+        word.setDeck(this);
+    }
 
     @PrePersist
     public void prePersist() {
