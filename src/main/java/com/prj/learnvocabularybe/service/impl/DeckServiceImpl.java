@@ -1,7 +1,9 @@
 package com.prj.learnvocabularybe.service.impl;
 
 import com.prj.learnvocabularybe.dto.request.DeckRequest;
+import com.prj.learnvocabularybe.dto.request.DeckUpdateRequest;
 import com.prj.learnvocabularybe.dto.request.WordRequest;
+import com.prj.learnvocabularybe.dto.request.WordUpdateRequest;
 import com.prj.learnvocabularybe.dto.response.DeckResponse;
 import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
 import com.prj.learnvocabularybe.dto.response.WordResponse;
@@ -20,9 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +39,14 @@ public class DeckServiceImpl implements DeckService {
     public List<DeckSummaryResponse> getAllDecks() {
         Long userId = SecurityUtil.getCurrentUser().getId();
         return deckRepository.getDeckSummariesByUserId(userId);
+    }
+
+    @Override
+    public DeckResponse getDeckById(Long id) {
+        DeckEntity deckEntity = deckRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Deck not found with id: " + id));
+        List<WordResponse> wordResponses = wordRepository.findWordsByDeckId(id);
+        return DeckMapper.map(deckEntity, wordResponses);
     }
 
     @Transactional
@@ -88,6 +98,102 @@ public class DeckServiceImpl implements DeckService {
         DeckEntity saved = deckRepository.save(deck);
         List<WordResponse> wordResponses = wordRepository.findWordsByDeckId(saved.getId());
         return DeckMapper.map(saved, wordResponses);
+    }
+
+    @Override
+    public DeckResponse updateDeck(Long deckId,
+                                   DeckUpdateRequest req,
+                                   List<MultipartFile> images,
+                                   List<Integer> imageIndexes) throws Exception {
+        UserEntity currentUser = SecurityUtil.getCurrentUser();
+
+        DeckEntity deck = deckRepository.findById(deckId)
+                .orElseThrow(() -> new RuntimeException("Deck not found: " + deckId));
+
+        // (tuỳ bạn) check quyền sở hữu
+        if (!deck.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Forbidden");
+        }
+
+        // Update deck fields
+        if (req.name() != null) deck.setName(req.name());
+        if (req.description() != null) deck.setDescription(req.description());
+        if (req.isPublic() != null) deck.setIsPublic(req.isPublic());
+
+        if (req.words() == null) {
+            throw new IllegalArgumentException("words is required");
+        }
+
+        Map<Integer, MultipartFile> imageByIndex = toImageIndexMap(images, imageIndexes);
+
+        // Map existing words by id
+        Map<Long, WordEntity> existingById = deck.getWords().stream()
+                .filter(w -> w.getId() != null)
+                .collect(Collectors.toMap(WordEntity::getId, Function.identity()));
+
+        // Track ids that remain after update
+        Set<Long> keepIds = new HashSet<>();
+
+        // Rebuild words list in the same order as request (optional)
+        List<WordEntity> newWordsList = new ArrayList<>();
+
+        for (int i = 0; i < req.words().size(); i++) {
+            WordUpdateRequest wr = req.words().get(i);
+
+            WordEntity word;
+            boolean isNew = (wr.id() == null);
+
+            if (isNew) {
+                word = new WordEntity();
+                word.setDeck(deck);
+            } else {
+                word = existingById.get(wr.id());
+                if (word == null) {
+                    throw new IllegalArgumentException("Word id not in this deck: " + wr.id());
+                }
+                keepIds.add(wr.id());
+            }
+
+            // Detect english change to regenerate audio
+            String oldEnglish = word.getEnglish();
+            String newEnglish = wr.english();
+
+            word.setEnglish(newEnglish);
+            word.setVietnamese(wr.vietnamese());
+
+            // Update image if file provided for this index
+            MultipartFile img = imageByIndex.get(i);
+            if (img != null && !img.isEmpty()) {
+                String publicId = "deck_" + deck.getId() + "/word_" + (isNew ? "new_" + i : word.getId()) + "_image";
+                String imageUrl = cloudinaryService.uploadImage(img, "flashcards/images", publicId);
+                word.setImageUrl(imageUrl);
+            }
+
+            // Create/regenerate audio when needed
+            boolean englishChanged = oldEnglish == null || !oldEnglish.equalsIgnoreCase(newEnglish);
+            if (isNew || englishChanged || word.getAudioUrl() == null || word.getAudioUrl().isBlank()) {
+                byte[] mp3 = ttsService.synthesizeEnglishToMp3(newEnglish);
+                String audioPublicId = "deck_" + deck.getId() + "/word_" + (isNew ? "new_" + i : word.getId()) + "_audio";
+                String audioUrl = cloudinaryService.uploadAudioMp3(mp3, "flashcards/audio", audioPublicId);
+                word.setAudioUrl(audioUrl);
+            }
+
+            newWordsList.add(word);
+        }
+
+        deck.getWords().clear();
+        for (WordEntity w : newWordsList) deck.addWord(w);
+
+        DeckEntity saved = deckRepository.save(deck);
+        List<WordResponse> wordResponses = wordRepository.findWordsByDeckId(saved.getId());
+        return DeckMapper.map(saved, wordResponses);
+    }
+
+    @Override
+    public void deleteDeck(Long id) {
+        DeckEntity deck = deckRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Deck not found with id: " + id));
+        deckRepository.delete(deck);
     }
 
     private Map<Integer, MultipartFile> toImageIndexMap(List<MultipartFile> images, List<Integer> imageIndexes) {

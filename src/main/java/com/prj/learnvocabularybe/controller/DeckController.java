@@ -1,6 +1,7 @@
 package com.prj.learnvocabularybe.controller;
 
 import com.prj.learnvocabularybe.dto.request.DeckRequest;
+import com.prj.learnvocabularybe.dto.request.DeckUpdateRequest;
 import com.prj.learnvocabularybe.dto.response.DeckResponse;
 import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
 import com.prj.learnvocabularybe.service.DeckService;
@@ -26,6 +27,11 @@ public class DeckController {
         return deckService.getAllDecks();
     }
 
+    @GetMapping("/{deckId}")
+    public DeckResponse getDeckById(@PathVariable Long deckId) {
+        return deckService.getDeckById(deckId);
+    }
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DeckResponse> createDeck(
             @RequestPart("deck") String deckJson,
@@ -35,5 +41,23 @@ public class DeckController {
         DeckRequest req = objectMapper.readValue(deckJson, DeckRequest.class);
         DeckResponse created = deckService.createDeck(req, images, imageIndexes);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping(value = "/{deckId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DeckResponse> updateDeck(
+            @PathVariable Long deckId,
+            @RequestParam("deck") String deckJson,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images,
+            @RequestParam(value = "imageIndexes", required = false) List<Integer> imageIndexes
+    ) throws Exception {
+        DeckUpdateRequest req = objectMapper.readValue(deckJson, DeckUpdateRequest.class);
+        DeckResponse updated = deckService.updateDeck(deckId, req, images, imageIndexes);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{deckId}")
+    public ResponseEntity<Void> deleteDeck(@PathVariable Long deckId) {
+        deckService.deleteDeck(deckId);
+        return ResponseEntity.noContent().build();
     }
 }
