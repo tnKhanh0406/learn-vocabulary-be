@@ -8,12 +8,18 @@ import java.util.List;
 
 public class DeckMapper {
     public static DeckResponse map(DeckEntity deckEntity, List<WordResponse> wordResponses) {
+        String username;
+        if (deckEntity.getCopiedFromDeck() == null) {
+            username = deckEntity.getUser().getUsername();
+        } else {
+            username = deckEntity.getCopiedFromDeck().getUser().getUsername();
+        }
         return new DeckResponse(
                 deckEntity.getId(),
                 deckEntity.getName(),
                 deckEntity.getDescription(),
                 deckEntity.getIsPublic(),
-                deckEntity.getUser().getUsername(),
+                username,
                 deckEntity.getUser().getAvatarUrl(),
                 wordResponses
         );

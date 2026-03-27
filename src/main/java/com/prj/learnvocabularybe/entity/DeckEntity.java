@@ -30,7 +30,7 @@ public class DeckEntity {
     private LocalDateTime createdAt;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private UserEntity user;
 
     @ManyToOne
@@ -41,16 +41,26 @@ public class DeckEntity {
     @JoinColumn(name = "copied_from_deck_id")
     private DeckEntity copiedFromDeck;
 
-    @OneToMany(mappedBy = "deck", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<WordEntity> words = new ArrayList<>();
+    @ManyToOne
+    @JoinColumn(name = "created_by")
+    private UserEntity createdBy;
 
-    public void addWord(WordEntity word) {
-        this.words.add(word);
-        word.setDeck(this);
+    @Column(nullable = false)
+    private Boolean isGeneratedByAI = false;
+
+    @OneToMany(mappedBy = "deck", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DeckWordEntity> deckWords = new ArrayList<>();
+
+    public void addDeckWord(WordMeaningEntity meaning) {
+        DeckWordEntity dw = new DeckWordEntity();
+        dw.setDeck(this);
+        dw.setWordMeaning(meaning);
+        this.deckWords.add(dw);
     }
 
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        this.isGeneratedByAI = false;
     }
 }
