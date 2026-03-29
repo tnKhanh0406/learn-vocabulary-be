@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,15 +13,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.prj.learnvocabularybe.dto.request.ChatRequest;
 import com.prj.learnvocabularybe.dto.request.ReviewActionRequest;
 import com.prj.learnvocabularybe.dto.response.AiExplanationResponse;
+import com.prj.learnvocabularybe.dto.response.ChatResponse;
 import com.prj.learnvocabularybe.dto.response.StudyWordResponse;
 import com.prj.learnvocabularybe.service.GeminiAPIService;
 import com.prj.learnvocabularybe.service.SpacedRepetitionService;
 
 @RestController
 @RequestMapping("/api/study")
-// Thêm @CrossOrigin("*") nếu bạn bị lỗi CORS khi test với Frontend React/Vue
+@CrossOrigin(origins = "*")
 public class StudyController {
 
     @Autowired
@@ -59,5 +62,18 @@ public class StudyController {
         
         AiExplanationResponse response = geminiAPIService.getExplanation(wordMeaningId, word);
         return ResponseEntity.ok(response);
+    }
+
+    // 4. API Chat với AI
+    @PostMapping("/chat")
+    public ResponseEntity<ChatResponse> chatWithAI(@RequestBody ChatRequest request) {
+        String question = request.getContent();
+        if (question == null || question.trim().isEmpty()) {
+            ChatResponse errorResponse = new ChatResponse("Vui lòng nhập câu hỏi.");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
+        String answer = geminiAPIService.chat(question.trim());
+        return ResponseEntity.ok(new ChatResponse(answer));
     }
 }

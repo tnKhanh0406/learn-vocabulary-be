@@ -2,6 +2,7 @@ package com.prj.learnvocabularybe.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,10 +47,10 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
         int grade = request.getGrade(); // 1: Quên, 2: Khó, 3: Nhớ, 4: Rất nhớ
 
         // Lấy các giá trị hiện tại
-        int currentLapses = progress.getLapses() != null ? progress.getLapses() : 0;
-        int currentRepetition = progress.getRepetitionCount() != null ? progress.getRepetitionCount() : 0;
-        float currentEaseFactor = progress.getEaseFactor() != null ? progress.getEaseFactor() : 2.5f;
-        int currentInterval = progress.getIntervalDays() != null ? progress.getIntervalDays() : 0;
+        int currentLapses = Objects.requireNonNullElse(progress.getLapses(), 0);
+        int currentRepetition = Objects.requireNonNullElse(progress.getRepetitionCount(), 0);
+        float currentEaseFactor = Objects.requireNonNullElse(progress.getEaseFactor(), 2.5f);
+        int currentInterval = Objects.requireNonNullElse(progress.getIntervalDays(), 0);
 
         // 2. Thuật toán SM-2
         if (grade == 1) { // Quên

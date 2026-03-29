@@ -1,30 +1,46 @@
 package com.prj.learnvocabularybe.service.impl;
 
-import com.prj.learnvocabularybe.dto.request.*;
-import com.prj.learnvocabularybe.dto.response.DeckResponse;
-import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
-import com.prj.learnvocabularybe.dto.response.WordResponse;
-import com.prj.learnvocabularybe.entity.*;
-import com.prj.learnvocabularybe.mapper.DeckMapper;
-import com.prj.learnvocabularybe.repository.*;
-import com.prj.learnvocabularybe.service.CloudinaryService;
-import com.prj.learnvocabularybe.service.DeckService;
-import com.prj.learnvocabularybe.service.TranslateTtsService;
-import com.prj.learnvocabularybe.util.SecurityUtil;
-import lombok.RequiredArgsConstructor;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import com.prj.learnvocabularybe.dto.request.DeckRequest;
+import com.prj.learnvocabularybe.dto.request.DeckUpdateRequest;
+import com.prj.learnvocabularybe.dto.request.WordRequest;
+import com.prj.learnvocabularybe.dto.request.WordUpdateRequest;
+import com.prj.learnvocabularybe.dto.response.DeckResponse;
+import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
+import com.prj.learnvocabularybe.dto.response.WordResponse;
+import com.prj.learnvocabularybe.entity.DeckEntity;
+import com.prj.learnvocabularybe.entity.DeckWordEntity;
+import com.prj.learnvocabularybe.entity.UserEntity;
+import com.prj.learnvocabularybe.entity.VocabularyEntity;
+import com.prj.learnvocabularybe.entity.WordMeaningEntity;
+import com.prj.learnvocabularybe.mapper.DeckMapper;
+import com.prj.learnvocabularybe.repository.DeckRepository;
+import com.prj.learnvocabularybe.repository.VocabularyRepository;
+import com.prj.learnvocabularybe.repository.WordMeaningRepository;
+import com.prj.learnvocabularybe.service.CloudinaryService;
+import com.prj.learnvocabularybe.service.DeckService;
+import com.prj.learnvocabularybe.service.TranslateTtsService;
+import com.prj.learnvocabularybe.util.SecurityUtil;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class DeckServiceImpl implements DeckService {
 
     private final DeckRepository deckRepository;
-    private final DeckWordRepository deckWordRepository;
     private final WordMeaningRepository wordMeaningRepository;
     private final VocabularyRepository vocabularyRepository;
 
