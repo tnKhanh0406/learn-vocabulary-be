@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.prj.learnvocabularybe.repository.DeckWordRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,6 +44,7 @@ public class DeckServiceImpl implements DeckService {
     private final DeckRepository deckRepository;
     private final WordMeaningRepository wordMeaningRepository;
     private final VocabularyRepository vocabularyRepository;
+    private final DeckWordRepository deckWordRepository;
 
     private final TranslateTtsService ttsService;
     private final CloudinaryService cloudinaryService;
