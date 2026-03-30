@@ -3,8 +3,10 @@ package com.prj.learnvocabularybe.repository;
 import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
 import com.prj.learnvocabularybe.entity.DeckEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -36,4 +38,45 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     GROUP BY d.id, d.name, d.user.username
 """)
     List<DeckSummaryResponse> getDeckSummariesByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE DeckEntity d
+        SET d.folder.id = :folderId
+        WHERE d.id IN :deckIds
+    """)
+    void addDecksToFolder(Long folderId, List<Long> deckIds);
+
+    @Query("""
+        SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
+            d.id,
+            d.name,
+            COUNT(dw.id),
+            d.user.username
+        )
+        FROM DeckEntity d
+        LEFT JOIN d.deckWords dw
+        WHERE d.user.id = :userId AND d.folder IS NULL
+        GROUP BY d.id, d.name, d.user.username
+""")
+    List<DeckSummaryResponse> getDeckSummariesNotInFolderByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+    UPDATE DeckEntity d
+    SET d.folder.id = NULL
+    WHERE d.id = :deckId
+""")
+    void removeDeckFromFolder(Long deckId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+    UPDATE DeckEntity d
+    SET d.folder.id = :folderId
+    WHERE d.id = :deckId
+""")
+    void addDeckToFolder(Long deckId, Long folderId);
 }
