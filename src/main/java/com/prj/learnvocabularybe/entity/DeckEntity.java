@@ -1,12 +1,22 @@
 package com.prj.learnvocabularybe.entity;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Table(name = "decks")
 @Entity
@@ -28,6 +38,12 @@ public class DeckEntity {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    
+    @Column(name = "is_ai_generated", columnDefinition = "integer default 0")
+    private Integer isAiGenerated = 0;
+
+    @Column(name = "topic", length = 255)
+    private String topic;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
