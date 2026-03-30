@@ -14,4 +14,6 @@ public interface DeckService {
     DeckResponse createDeck(DeckRequest deckRequest, List<MultipartFile> images, List<Integer> imageIndexes) throws Exception;
     DeckResponse updateDeck(Long id, DeckUpdateRequest request, List<MultipartFile> images, List<Integer> imageIndexes) throws Exception;
     void deleteDeck(Long id);
+    List<DeckSummaryResponse> getAllDecksNotInFolder();
+    DeckResponse addDeckToFolder(Long deckId, Long folderId);
 }

@@ -1,5 +1,6 @@
 package com.prj.learnvocabularybe.controller;
 
+import com.prj.learnvocabularybe.dto.request.AddDecksToFolderRequest;
 import com.prj.learnvocabularybe.dto.request.FolderRequest;
 import com.prj.learnvocabularybe.dto.response.FolderResponse;
 import com.prj.learnvocabularybe.dto.response.FolderSummaryResponse;
@@ -49,4 +50,17 @@ public class FolderController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{folderId}/decks")
+    public ResponseEntity<FolderResponse> addDecksToFolder(@PathVariable Long folderId,
+                                                           @RequestBody AddDecksToFolderRequest request) {
+        FolderResponse response = folderService.addDecksToFolder(folderId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{folderId}/decks/{deckId}/remove")
+    public ResponseEntity<FolderResponse> removeDeckFromFolder(@PathVariable Long folderId,
+                                                              @PathVariable Long deckId) {
+        FolderResponse response = folderService.removeDeckFromFolder(folderId, deckId);
+        return ResponseEntity.ok(response);
+    }
 }
