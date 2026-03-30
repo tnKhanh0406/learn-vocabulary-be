@@ -1,5 +1,6 @@
 package com.prj.learnvocabularybe.service.impl;
 
+import com.prj.learnvocabularybe.dto.request.AddDecksToFolderRequest;
 import com.prj.learnvocabularybe.dto.request.FolderRequest;
 import com.prj.learnvocabularybe.dto.response.FolderResponse;
 import com.prj.learnvocabularybe.dto.response.FolderSummaryResponse;
@@ -78,5 +79,31 @@ public class FolderServiceImpl implements FolderService {
         FolderEntity folderEntity = folderRepository.findById(folderId)
                 .orElseThrow(() -> new RuntimeException("Folder not found with id: " + folderId));
         folderRepository.delete(folderEntity);
+    }
+
+    @Override
+    public FolderResponse addDecksToFolder(Long folderId, AddDecksToFolderRequest request) {
+        FolderEntity folderEntity = folderRepository.findById(folderId)
+                .orElseThrow(() -> new RuntimeException("Folder not found with id: " + folderId));
+        deckRepository.addDecksToFolder(folderEntity.getId(), request.deckIds());
+        return new FolderResponse(
+                folderEntity.getId(),
+                folderEntity.getName(),
+                folderEntity.getDescription(),
+                deckRepository.findDeckSummariesByFolderId(folderEntity.getId())
+        );
+    }
+
+    @Override
+    public FolderResponse removeDeckFromFolder(Long folderId, Long deckId) {
+        FolderEntity folderEntity = folderRepository.findById(folderId)
+                .orElseThrow(() -> new RuntimeException("Folder not found with id: " + folderId));
+        deckRepository.removeDeckFromFolder(deckId);
+        return new FolderResponse(
+                folderEntity.getId(),
+                folderEntity.getName(),
+                folderEntity.getDescription(),
+                deckRepository.findDeckSummariesByFolderId(folderEntity.getId())
+        );
     }
 }

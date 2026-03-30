@@ -60,4 +60,16 @@ public class DeckController {
         deckService.deleteDeck(deckId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/no-folder")
+    public List<DeckSummaryResponse> getDecksNotInFolder() {
+        return deckService.getAllDecksNotInFolder();
+    }
+
+    @PutMapping("/{deckId}/add-to-folder/{folderId}")
+    public ResponseEntity<DeckResponse> addDeckToFolder(@PathVariable Long deckId,
+                                                        @PathVariable Long folderId) {
+        DeckResponse response = deckService.addDeckToFolder(deckId, folderId);
+        return ResponseEntity.ok(response);
+    }
 }

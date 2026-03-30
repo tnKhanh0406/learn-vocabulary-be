@@ -229,6 +229,23 @@ public class DeckServiceImpl implements DeckService {
         }
     }
 
+    @Override
+    public List<DeckSummaryResponse> getAllDecksNotInFolder() {
+        return deckRepository.getDeckSummariesNotInFolderByUserId(SecurityUtil.getCurrentUser().getId());
+    }
+
+    @Override
+    public DeckResponse addDeckToFolder(Long deckId, Long folderId) {
+        DeckEntity deck = deckRepository.findById(deckId)
+                .orElseThrow(() -> new RuntimeException("Deck not found with id: " + deckId));
+        if (!deck.getUser().getId().equals(SecurityUtil.getCurrentUser().getId())) {
+            throw new RuntimeException("Forbidden");
+        }
+        deckRepository.addDeckToFolder(deckId, folderId);
+        List<WordResponse> wordResponses = wordMeaningRepository.findWordResponsesByDeckId(deck.getId());
+        return DeckMapper.map(deck, wordResponses);
+    }
+
     private DeckWordEntity newDeckWord(DeckEntity deck, WordMeaningEntity meaning) {
         DeckWordEntity dw = new DeckWordEntity();
         dw.setDeck(deck);
