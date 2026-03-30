@@ -66,20 +66,28 @@ public class DeckServiceImpl implements DeckService {
 
         Map<Integer, MultipartFile> imageByIndex = toImageIndexMap(images, imageIndexes);
 
+        Set<String> words = req.words().stream()
+                .map(w -> w.english().trim().toLowerCase())
+                .collect(Collectors.toSet());
+        List<VocabularyEntity> existingVocabs = vocabularyRepository.findAllByWordInIgnoreCase(words);
+        Map<String, VocabularyEntity> vocabMap = existingVocabs.stream()
+                .collect(Collectors.toMap(v -> v.getWord().toLowerCase(), v -> v));
+
+        List<DeckWordEntity> deckWords = new ArrayList<>();
+        List<WordMeaningEntity> meanings = new ArrayList<>();
         for (int i = 0; i < req.words().size(); i++) {
             WordRequest wr = req.words().get(i);
 
-            // 1) upsert vocabulary by english (word)
-            VocabularyEntity vocab = upsertVocabularyWithAudio(wr.english(), deck.getId(), i);
+            VocabularyEntity vocab = getOrCreateVocab(wr.english(), vocabMap);
 
-            // 2) create meaning (owned by current user)
+            // create meaning
             WordMeaningEntity meaning = new WordMeaningEntity();
             meaning.setVocabulary(vocab);
             meaning.setUser(currentUser);
             meaning.setMeaning(wr.vietnamese());
             meaning.setExplanation(null);
 
-            // image optional -> save to cloudinary then set url
+            // save image to cloudinary
             MultipartFile img = imageByIndex.get(i);
             if (img != null && !img.isEmpty()) {
                 String publicId = "deck_" + deck.getId() + "/meaning_" + i + "_image";
@@ -87,12 +95,17 @@ public class DeckServiceImpl implements DeckService {
                 meaning.setImageUrl(imageUrl);
             }
 
-            meaning = wordMeaningRepository.save(meaning);
-
-            // 3) link deck <-> meaning
-            deck.addDeckWord(meaning);
+            meanings.add(meaning);
         }
+        wordMeaningRepository.saveAll(meanings);
 
+        for (WordMeaningEntity m : meanings) {
+            DeckWordEntity dw = new DeckWordEntity();
+            dw.setDeck(deck);
+            dw.setWordMeaning(m);
+            deckWords.add(dw);
+        }
+        deckWordRepository.saveAll(deckWords);
         DeckEntity saved = deckRepository.save(deck);
         List<WordResponse> wordResponses = wordMeaningRepository.findWordResponsesByDeckId(saved.getId());
         return DeckMapper.map(saved, wordResponses);
@@ -100,7 +113,10 @@ public class DeckServiceImpl implements DeckService {
 
     @Transactional
     @Override
-    public DeckResponse updateDeck(Long deckId, DeckUpdateRequest req, List<MultipartFile> images, List<Integer> imageIndexes) throws Exception {
+    public DeckResponse updateDeck(Long deckId,
+                                   DeckUpdateRequest req,
+                                   List<MultipartFile> images,
+                                   List<Integer> imageIndexes) throws Exception {
         UserEntity currentUser = SecurityUtil.getCurrentUser();
 
         DeckEntity deck = deckRepository.findById(deckId)
@@ -120,74 +136,74 @@ public class DeckServiceImpl implements DeckService {
 
         Map<Integer, MultipartFile> imageByIndex = toImageIndexMap(images, imageIndexes);
 
-        // current meanings in deck (ids)
-        Set<Long> existingMeaningIds = deck.getDeckWords().stream()
-                .map(dw -> dw.getWordMeaning().getId())
-                .collect(Collectors.toSet());
+        // Map existing DeckWord by wordMeaningId
+        Map<Long, DeckWordEntity> existingDeckWordByMeaningId = deck.getDeckWords().stream()
+                .collect(Collectors.toMap(dw -> dw.getWordMeaning().getId(), dw -> dw));
 
-        // ids requested (non-null)
+        // 1. Remove relations that user deleted: delete DeckWord only
         Set<Long> requestedMeaningIds = req.words().stream()
                 .map(WordUpdateRequest::id)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        // meanings removed by user => delete DeckWord + delete WordMeaning (NOT vocabulary)
-        Set<Long> removedMeaningIds = new HashSet<>(existingMeaningIds);
-        removedMeaningIds.removeAll(requestedMeaningIds);
-        if (!removedMeaningIds.isEmpty()) {
-            // remove from deckWords list
-            deck.getDeckWords().removeIf(dw -> removedMeaningIds.contains(dw.getWordMeaning().getId()));
-            // delete meanings
-            wordMeaningRepository.deleteAllById(removedMeaningIds);
-        }
+        deck.getDeckWords().removeIf(dw -> !requestedMeaningIds.contains(dw.getWordMeaning().getId()));
 
-        // Now handle requested list in order.
-        // Rule of yours: "nếu từ nào bị user xóa hoặc sửa thì sẽ xóa meaning"
-        // => Với item có id != null, nếu english/vietnamese thay đổi HOẶC có ảnh mới => delete old meaning and create new one.
-        // Với item id == null => create new one.
-        //
-        // Implement bằng cách build deckWords mới theo request order.
-        Map<Long, WordMeaningEntity> currentMeaningById = deck.getDeckWords().stream()
-                .map(DeckWordEntity::getWordMeaning)
-                .collect(Collectors.toMap(WordMeaningEntity::getId, wm -> wm));
-
+        // 2. Build new deckWords list in request order
         List<DeckWordEntity> newDeckWords = new ArrayList<>();
 
         for (int i = 0; i < req.words().size(); i++) {
             WordUpdateRequest wr = req.words().get(i);
             MultipartFile img = imageByIndex.get(i);
 
+            //New item: create WordMeaning + link
             if (wr.id() == null) {
-                WordMeaningEntity created = createMeaningForDeckItem(currentUser, deck.getId(), i, wr.english(), wr.vietnamese(), img);
-                newDeckWords.add(newDeckWord(deck, created));
+                WordMeaningEntity createdMeaning = createMeaningForDeckItem(
+                        currentUser, deck.getId(), i, wr.english(), wr.vietnamese(), img
+                );
+                newDeckWords.add(newDeckWord(deck, createdMeaning));
                 continue;
             }
 
-            WordMeaningEntity oldMeaning = currentMeaningById.get(wr.id());
-            if (oldMeaning == null) {
-                // Client gửi id không thuộc deck hoặc đã bị xóa
-                throw new IllegalArgumentException("WordMeaning id not in this deck: " + wr.id());
-            }
+            //Existing item: update meaning or create new meaning based on vocab change
+            DeckWordEntity dw = existingDeckWordByMeaningId.get(wr.id());
 
-            boolean hasNewImage = (img != null && !img.isEmpty());
-            boolean englishChanged = !oldMeaning.getVocabulary().getWord().equalsIgnoreCase(wr.english());
-            boolean meaningChanged = !Objects.equals(oldMeaning.getMeaning(), wr.vietnamese());
+            WordMeaningEntity meaning = dw.getWordMeaning();
 
-            if (englishChanged || meaningChanged || hasNewImage) {
-                // delete old meaning + create new meaning (per your rule)
-                // 1) remove link (not strictly required if we rebuild list)
-                // 2) delete old meaning entity (vocab stays)
-                wordMeaningRepository.delete(oldMeaning);
+            // vocab currently attached to that meaning
+            String oldEnglish = meaning.getVocabulary().getWord();
+            String newEnglish = wr.english() == null ? "" : wr.english().trim();
 
-                WordMeaningEntity created = createMeaningForDeckItem(currentUser, deck.getId(), i, wr.english(), wr.vietnamese(), img);
-                newDeckWords.add(newDeckWord(deck, created));
+            boolean vocabChanged = !oldEnglish.equalsIgnoreCase(newEnglish);
+
+            if (!vocabChanged) {
+                // Case: only meaning/image changed -> update WordMeaning
+                boolean meaningChanged = !Objects.equals(meaning.getMeaning(), wr.vietnamese());
+                if (meaningChanged) {
+                    meaning.setMeaning(wr.vietnamese());
+                }
+
+                if (img != null && !img.isEmpty()) {
+                    String publicId = "deck_" + deck.getId() + "/meaning_" + meaning.getId() + "_image";
+                    String imageUrl = cloudinaryService.uploadImage(img, "flashcards/images", publicId);
+                    meaning.setImageUrl(imageUrl);
+                }
+
+                wordMeaningRepository.save(meaning);
+
+                newDeckWords.add(dw);
             } else {
-                // unchanged => keep old meaning (no new image)
-                newDeckWords.add(newDeckWord(deck, oldMeaning));
+                // Case: vocab changed -> create new WordMeaning and change relation
+                WordMeaningEntity newMeaning = createMeaningForDeckItem(
+                        currentUser, deck.getId(), i, newEnglish, wr.vietnamese(), img
+                );
+
+                dw.setWordMeaning(newMeaning);
+
+                newDeckWords.add(dw);
             }
         }
 
-        // Replace deckWords with new list (orphanRemoval deletes removed DeckWord rows)
+        // Replace order according to request
         deck.getDeckWords().clear();
         deck.getDeckWords().addAll(newDeckWords);
 
@@ -201,16 +217,15 @@ public class DeckServiceImpl implements DeckService {
         DeckEntity deck = deckRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Deck not found with id: " + id));
 
-        // Xóa meanings thuộc deck theo rule? (hiện tại yêu cầu chỉ nói update)
-        // Nếu bạn muốn delete deck thì cũng delete WordMeaning (owned by deck owner) để không rác:
+        // current meanings in deck
         Set<Long> meaningIds = deck.getDeckWords().stream()
                 .map(dw -> dw.getWordMeaning().getId())
                 .collect(Collectors.toSet());
 
-        deckRepository.delete(deck); // orphanRemoval deletes DeckWord rows
+        deckRepository.delete(deck);
 
         if (!meaningIds.isEmpty()) {
-            wordMeaningRepository.deleteAllById(meaningIds);
+            wordMeaningRepository.deleteUnusedWordMeanings(meaningIds);
         }
     }
 
@@ -229,7 +244,7 @@ public class DeckServiceImpl implements DeckService {
             String vietnamese,
             MultipartFile img
     ) throws Exception {
-        VocabularyEntity vocab = upsertVocabularyWithAudio(english, deckId, index);
+        VocabularyEntity vocab = upsertVocabularyWithAudio(english);
 
         WordMeaningEntity meaning = new WordMeaningEntity();
         meaning.setVocabulary(vocab);
@@ -246,7 +261,7 @@ public class DeckServiceImpl implements DeckService {
         return wordMeaningRepository.save(meaning);
     }
 
-    private VocabularyEntity upsertVocabularyWithAudio(String english, Long deckId, int index) throws Exception {
+    private VocabularyEntity upsertVocabularyWithAudio(String english) throws Exception {
         String normalized = english == null ? null : english.trim();
         if (normalized == null || normalized.isBlank()) {
             throw new IllegalArgumentException("english is required");
@@ -259,7 +274,6 @@ public class DeckServiceImpl implements DeckService {
                     return v;
                 });
 
-        // Ensure audio_url exists (only generate if missing)
         if (vocab.getAudioUrl() == null || vocab.getAudioUrl().isBlank()) {
             byte[] mp3 = ttsService.synthesizeEnglishToMp3(normalized);
             String audioPublicId = "vocab/" + sanitize(normalized) + "_audio";
@@ -268,6 +282,27 @@ public class DeckServiceImpl implements DeckService {
         }
 
         return vocabularyRepository.save(vocab);
+    }
+
+    private VocabularyEntity getOrCreateVocab(String word, Map<String, VocabularyEntity> vocabMap) throws Exception {
+        String key = word.trim().toLowerCase();
+
+        VocabularyEntity vocab = vocabMap.get(key);
+
+        if (vocab == null) {
+            vocab = new VocabularyEntity();
+            vocab.setWord(word);
+
+            byte[] mp3 = ttsService.synthesizeEnglishToMp3(word);
+            String audioUrl = cloudinaryService.uploadAudioMp3(
+                    mp3, "flashcards/audio", "vocab/" + key
+            );
+            vocab.setAudioUrl(audioUrl);
+
+            vocab = vocabularyRepository.save(vocab);
+            vocabMap.put(key, vocab);
+        }
+        return vocab;
     }
 
     private String sanitize(String s) {

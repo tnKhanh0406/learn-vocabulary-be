@@ -4,8 +4,11 @@ import com.prj.learnvocabularybe.dto.response.WordResponse;
 import com.prj.learnvocabularybe.entity.WordMeaningEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Set;
 
 public interface WordMeaningRepository extends JpaRepository<WordMeaningEntity, Long> {
     @Query("""
@@ -23,4 +26,15 @@ public interface WordMeaningRepository extends JpaRepository<WordMeaningEntity, 
         ORDER BY dw.id
     """)
     List<WordResponse> findWordResponsesByDeckId(Long deckId);
+
+    @Modifying
+    @Query("""
+    DELETE FROM WordMeaningEntity w
+    WHERE w.id IN :ids
+    AND NOT EXISTS (
+        SELECT 1 FROM DeckWordEntity dw
+        WHERE dw.wordMeaning.id = w.id
+    )
+""")
+    void deleteUnusedWordMeanings(@Param("ids") Set<Long> ids);
 }
