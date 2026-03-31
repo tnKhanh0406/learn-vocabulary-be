@@ -1,17 +1,20 @@
 package com.prj.learnvocabularybe.repository;
 
-import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
-import com.prj.learnvocabularybe.entity.DeckEntity;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
+import com.prj.learnvocabularybe.entity.DeckEntity;
 
 public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
+    Optional<DeckEntity> findFirstByUser_IdAndTopicIgnoreCase(Long userId, String topic);
+
     @Query("""
     SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
         d.id,
