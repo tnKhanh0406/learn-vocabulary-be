@@ -16,4 +16,5 @@ public interface DeckService {
     void deleteDeck(Long id);
     List<DeckSummaryResponse> getAllDecksNotInFolder();
     DeckResponse addDeckToFolder(Long deckId, Long folderId);
+    DeckResponse copyDeck(Long sourceDeckId);
 }

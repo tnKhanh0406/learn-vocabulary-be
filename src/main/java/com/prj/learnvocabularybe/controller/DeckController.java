@@ -72,4 +72,10 @@ public class DeckController {
         DeckResponse response = deckService.addDeckToFolder(deckId, folderId);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{deckId}/copy")
+    public ResponseEntity<DeckResponse> copyDeck(@PathVariable Long deckId) {
+        DeckResponse copied = deckService.copyDeck(deckId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(copied);
+    }
 }

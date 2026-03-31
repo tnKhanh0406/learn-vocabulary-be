@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     @Query("""
@@ -79,4 +80,14 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     WHERE d.id = :deckId
 """)
     void addDeckToFolder(Long deckId, Long folderId);
+
+    @Query("""
+        SELECT DISTINCT d
+        FROM DeckEntity d
+        LEFT JOIN FETCH d.deckWords dw
+        LEFT JOIN FETCH dw.wordMeaning wm
+        LEFT JOIN FETCH wm.vocabulary v
+        WHERE d.id = :deckId
+    """)
+    Optional<DeckEntity> findByIdWithWords(Long deckId);
 }

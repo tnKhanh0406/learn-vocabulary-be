@@ -264,6 +264,60 @@ public class DeckServiceImpl implements DeckService {
         return DeckMapper.map(deck, wordResponses);
     }
 
+    @Transactional
+    @Override
+    public DeckResponse copyDeck(Long sourceDeckId) {
+        UserEntity currentUser = SecurityUtil.getCurrentUser();
+
+        DeckEntity source = deckRepository.findByIdWithWords(sourceDeckId)
+                .orElseThrow(() -> new RuntimeException("Deck not found: " + sourceDeckId));
+
+        boolean isOwner = source.getUser().getId().equals(currentUser.getId());
+        boolean canCopy = isOwner || Boolean.TRUE.equals(source.getIsPublic());
+        if (!canCopy) throw new RuntimeException("Forbidden");
+
+        DeckEntity copy = new DeckEntity();
+        copy.setUser(currentUser);
+        copy.setCopiedFromDeck(source);
+        copy.setCreatedBy(source.getCreatedBy());
+        copy.setIsGeneratedByAI(false);
+        copy.setName("Copy of " + source.getName());
+        copy.setDescription(source.getDescription());
+        copy.setIsPublic(source.getIsPublic());
+
+        copy = deckRepository.save(copy);
+
+        List<WordMeaningEntity> newMeanings = new ArrayList<>();
+        // copy meanings
+        for (DeckWordEntity srcDw : source.getDeckWords()) {
+            WordMeaningEntity newMeaning = getWordMeaningEntity(srcDw, currentUser);
+
+//            newMeaning = wordMeaningRepository.save(newMeaning);
+            newMeanings.add(newMeaning);
+            DeckWordEntity newDw = new DeckWordEntity();
+            newDw.setDeck(copy);
+            newDw.setWordMeaning(newMeaning);
+            copy.getDeckWords().add(newDw);
+        }
+        wordMeaningRepository.saveAll(newMeanings);
+        DeckEntity saved = deckRepository.save(copy);
+
+        List<WordResponse> wordResponses = wordMeaningRepository.findWordResponsesByDeckId(saved.getId());
+        return DeckMapper.map(saved, wordResponses);
+    }
+
+    private static WordMeaningEntity getWordMeaningEntity(DeckWordEntity srcDw, UserEntity currentUser) {
+        WordMeaningEntity srcMeaning = srcDw.getWordMeaning();
+
+        WordMeaningEntity newMeaning = new WordMeaningEntity();
+        newMeaning.setVocabulary(srcMeaning.getVocabulary());
+        newMeaning.setUser(currentUser);
+        newMeaning.setMeaning(srcMeaning.getMeaning());
+        newMeaning.setExplanation(null);
+        newMeaning.setImageUrl(srcMeaning.getImageUrl());
+        return newMeaning;
+    }
+
     private DeckWordEntity newDeckWord(DeckEntity deck, WordMeaningEntity meaning) {
         DeckWordEntity dw = new DeckWordEntity();
         dw.setDeck(deck);
