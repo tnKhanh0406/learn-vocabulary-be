@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     @Query("""
@@ -16,28 +17,33 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
         d.id,
         d.name,
         COUNT(dw.id),
-        d.user.username
+        d.user.username,
+        d.user.avatarUrl
     )
     FROM DeckEntity d
     LEFT JOIN d.deckWords dw
     WHERE d.folder.id = :folderId
-    GROUP BY d.id, d.name, d.user.username
+    GROUP BY d.id, d.name, d.user.username, d.user.avatarUrl
 """)
     List<DeckSummaryResponse> findDeckSummariesByFolderId(Long folderId);
 
     @Query("""
-    SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
-        d.id,
-        d.name,
-        COUNT(dw.id),
-        d.user.username
-    )
-    FROM DeckEntity d
-    LEFT JOIN d.deckWords dw
-    WHERE d.user.id = :userId
-    GROUP BY d.id, d.name, d.user.username
-""")
-    List<DeckSummaryResponse> getDeckSummariesByUserId(@Param("userId") Long userId);
+        SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
+            d.id,
+            d.name,
+            COUNT(dw.id),
+            d.user.username,
+            d.user.avatarUrl
+        )
+        FROM DeckEntity d
+        LEFT JOIN d.deckWords dw
+        WHERE d.user.id = :userId
+          AND (:q IS NULL OR :q = '' OR LOWER(d.name) LIKE LOWER(CONCAT('%', :q, '%')))
+        GROUP BY d.id, d.name, d.user.username, d.user.avatarUrl
+        ORDER BY d.createdAt DESC
+    """)
+    List<DeckSummaryResponse> searchMyDecksByName(@Param("userId") Long userId,
+                                                  @Param("q") String q);
 
     @Modifying
     @Transactional
@@ -53,12 +59,13 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
             d.id,
             d.name,
             COUNT(dw.id),
-            d.user.username
+            d.user.username,
+            d.user.avatarUrl
         )
         FROM DeckEntity d
         LEFT JOIN d.deckWords dw
         WHERE d.user.id = :userId AND d.folder IS NULL
-        GROUP BY d.id, d.name, d.user.username
+        GROUP BY d.id, d.name, d.user.username, d.user.avatarUrl
 """)
     List<DeckSummaryResponse> getDeckSummariesNotInFolderByUserId(@Param("userId") Long userId);
 
@@ -79,4 +86,33 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     WHERE d.id = :deckId
 """)
     void addDeckToFolder(Long deckId, Long folderId);
+
+    @Query("""
+        SELECT DISTINCT d
+        FROM DeckEntity d
+        LEFT JOIN FETCH d.deckWords dw
+        LEFT JOIN FETCH dw.wordMeaning wm
+        LEFT JOIN FETCH wm.vocabulary v
+        WHERE d.id = :deckId
+    """)
+    Optional<DeckEntity> findByIdWithWords(Long deckId);
+
+    @Query("""
+        SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
+            d.id,
+            d.name,
+            COUNT(dw.id),
+            d.user.username,
+            d.user.avatarUrl
+        )
+        FROM DeckEntity d
+        LEFT JOIN d.deckWords dw
+        WHERE d.user.id <> :userId
+          AND d.isPublic = true
+          AND (:q IS NULL OR :q = '' OR LOWER(d.name) LIKE LOWER(CONCAT('%', :q, '%')))
+        GROUP BY d.id, d.name, d.user.username, d.user.avatarUrl
+        ORDER BY d.createdAt DESC
+    """)
+    List<DeckSummaryResponse> searchPublicDecksByName(@Param("userId") Long userId,
+                                                      @Param("q") String q);
 }
