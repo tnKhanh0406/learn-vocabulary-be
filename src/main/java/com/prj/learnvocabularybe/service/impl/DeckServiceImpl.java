@@ -50,15 +50,20 @@ public class DeckServiceImpl implements DeckService {
     private final CloudinaryService cloudinaryService;
 
     @Override
-    public List<DeckSummaryResponse> getAllDecks() {
+    public List<DeckSummaryResponse> getAllDecks(String q) {
         Long userId = SecurityUtil.getCurrentUser().getId();
-        return deckRepository.getDeckSummariesByUserId(userId);
+        return deckRepository.searchMyDecksByName(userId, q);
     }
 
     @Override
     public DeckResponse getDeckById(Long id) {
         DeckEntity deckEntity = deckRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Deck not found with id: " + id));
+        boolean isOwner = deckEntity.getUser().getId().equals(SecurityUtil.getCurrentUser().getId());
+        boolean canAccess = isOwner || Boolean.TRUE.equals(deckEntity.getIsPublic());
+        if (!canAccess) {
+            throw new RuntimeException("Forbidden");
+        }
         List<WordResponse> wordResponses = wordMeaningRepository.findWordResponsesByDeckId(id);
         return DeckMapper.map(deckEntity, wordResponses);
     }
@@ -279,7 +284,7 @@ public class DeckServiceImpl implements DeckService {
         DeckEntity copy = new DeckEntity();
         copy.setUser(currentUser);
         copy.setCopiedFromDeck(source);
-        copy.setCreatedBy(source.getCreatedBy());
+        copy.setCreatedBy(currentUser);
         copy.setIsGeneratedByAI(false);
         copy.setName("Copy of " + source.getName());
         copy.setDescription(source.getDescription());
@@ -304,6 +309,11 @@ public class DeckServiceImpl implements DeckService {
 
         List<WordResponse> wordResponses = wordMeaningRepository.findWordResponsesByDeckId(saved.getId());
         return DeckMapper.map(saved, wordResponses);
+    }
+
+    @Override
+    public List<DeckSummaryResponse> searchPublicDecksByName(String q) {
+        return deckRepository.searchPublicDecksByName(SecurityUtil.getCurrentUser().getId(), q);
     }
 
     private static WordMeaningEntity getWordMeaningEntity(DeckWordEntity srcDw, UserEntity currentUser) {

@@ -23,8 +23,8 @@ public class DeckController {
     private final ObjectMapper objectMapper;
 
     @GetMapping
-    public List<DeckSummaryResponse> getDeckSummaries() {
-        return deckService.getAllDecks();
+    public List<DeckSummaryResponse> getDeckSummaries(@RequestParam(value = "q", required = false) String q) {
+        return deckService.getAllDecks(q);
     }
 
     @GetMapping("/{deckId}")
@@ -77,5 +77,10 @@ public class DeckController {
     public ResponseEntity<DeckResponse> copyDeck(@PathVariable Long deckId) {
         DeckResponse copied = deckService.copyDeck(deckId);
         return ResponseEntity.status(HttpStatus.CREATED).body(copied);
+    }
+
+    @GetMapping("/search")
+    public List<DeckSummaryResponse> searchPublicDecksByName(@RequestParam("q") String q) {
+        return deckService.searchPublicDecksByName(q);
     }
 }

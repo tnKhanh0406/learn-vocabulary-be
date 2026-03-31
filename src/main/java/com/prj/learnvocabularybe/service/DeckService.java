@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface DeckService {
-    List<DeckSummaryResponse> getAllDecks();
+    List<DeckSummaryResponse> getAllDecks(String q);
     DeckResponse getDeckById(Long id);
     DeckResponse createDeck(DeckRequest deckRequest, List<MultipartFile> images, List<Integer> imageIndexes) throws Exception;
     DeckResponse updateDeck(Long id, DeckUpdateRequest request, List<MultipartFile> images, List<Integer> imageIndexes) throws Exception;
@@ -17,4 +17,5 @@ public interface DeckService {
     List<DeckSummaryResponse> getAllDecksNotInFolder();
     DeckResponse addDeckToFolder(Long deckId, Long folderId);
     DeckResponse copyDeck(Long sourceDeckId);
+    List<DeckSummaryResponse> searchPublicDecksByName(String q);
 }

@@ -4,6 +4,7 @@ public record DeckSummaryResponse(
         Long id,
         String name,
         Long wordCount,
-        String authorName
+        String authorName,
+        String avatarUrl
 ) {
 }
