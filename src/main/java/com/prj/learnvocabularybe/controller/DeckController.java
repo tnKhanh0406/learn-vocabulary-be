@@ -83,4 +83,9 @@ public class DeckController {
     public List<DeckSummaryResponse> searchPublicDecksByName(@RequestParam("q") String q) {
         return deckService.searchPublicDecksByName(q);
     }
+
+    @GetMapping("/user/{userId}")
+    public List<DeckSummaryResponse> getPublicDecksByUserId(@PathVariable Long userId) {
+        return deckService.getPublicDecksByUserId(userId);
+    }
 }
