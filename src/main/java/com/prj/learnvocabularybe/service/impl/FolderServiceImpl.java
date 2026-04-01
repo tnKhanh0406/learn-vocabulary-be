@@ -2,6 +2,7 @@ package com.prj.learnvocabularybe.service.impl;
 
 import com.prj.learnvocabularybe.dto.request.AddDecksToFolderRequest;
 import com.prj.learnvocabularybe.dto.request.FolderRequest;
+import com.prj.learnvocabularybe.dto.response.FolderPublicResponse;
 import com.prj.learnvocabularybe.dto.response.FolderResponse;
 import com.prj.learnvocabularybe.dto.response.FolderSummaryResponse;
 import com.prj.learnvocabularybe.entity.FolderEntity;
@@ -104,6 +105,19 @@ public class FolderServiceImpl implements FolderService {
                 folderEntity.getName(),
                 folderEntity.getDescription(),
                 deckRepository.findDeckSummariesByFolderId(folderEntity.getId())
+        );
+    }
+
+    @Override
+    public FolderPublicResponse getFolderPublicById(Long folderId) {
+        FolderEntity folderEntity = folderRepository.findById(folderId)
+                .orElseThrow(() -> new RuntimeException("Folder not found with id: " + folderId));
+        return new FolderPublicResponse(
+                folderEntity.getId(),
+                folderEntity.getName(),
+                folderEntity.getUser().getUsername(),
+                folderEntity.getUser().getAvatarUrl(),
+                deckRepository.findDeckSummariesPublicByFolderId(folderId)
         );
     }
 }

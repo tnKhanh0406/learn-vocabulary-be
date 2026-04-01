@@ -115,4 +115,37 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     """)
     List<DeckSummaryResponse> searchPublicDecksByName(@Param("userId") Long userId,
                                                       @Param("q") String q);
+
+    @Query("""
+        SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
+            d.id,
+            d.name,
+            COUNT(dw.id),
+            d.user.username,
+            d.user.avatarUrl
+        )
+        FROM DeckEntity d
+        LEFT JOIN d.deckWords dw
+        WHERE d.user.id = :userId
+          AND d.isPublic = true
+        GROUP BY d.id, d.name, d.user.username, d.user.avatarUrl
+        ORDER BY d.createdAt DESC
+    """)
+    List<DeckSummaryResponse> searchPublicDecksByUserId(Long userId);
+
+    @Query("""
+    SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
+        d.id,
+        d.name,
+        COUNT(dw.id),
+        d.user.username,
+        d.user.avatarUrl
+    )
+    FROM DeckEntity d
+    LEFT JOIN d.deckWords dw
+    WHERE d.folder.id = :folderId
+    AND d.isPublic = true
+    GROUP BY d.id, d.name, d.user.username, d.user.avatarUrl
+""")
+    List<DeckSummaryResponse> findDeckSummariesPublicByFolderId(Long folderId);
 }

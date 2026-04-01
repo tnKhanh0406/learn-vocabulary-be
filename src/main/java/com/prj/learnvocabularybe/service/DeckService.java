@@ -18,4 +18,5 @@ public interface DeckService {
     DeckResponse addDeckToFolder(Long deckId, Long folderId);
     DeckResponse copyDeck(Long sourceDeckId);
     List<DeckSummaryResponse> searchPublicDecksByName(String q);
+    List<DeckSummaryResponse> getPublicDecksByUserId(Long userId);
 }
