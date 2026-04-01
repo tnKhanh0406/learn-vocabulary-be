@@ -33,7 +33,9 @@ import com.prj.learnvocabularybe.repository.DeckRepository;
 import com.prj.learnvocabularybe.repository.DeckWordRepository;
 import com.prj.learnvocabularybe.repository.VocabularyRepository;
 import com.prj.learnvocabularybe.repository.WordMeaningRepository;
+import com.prj.learnvocabularybe.service.CloudinaryService;
 import com.prj.learnvocabularybe.service.GeminiAPIService; 
+import com.prj.learnvocabularybe.service.TranslateTtsService;
 import com.prj.learnvocabularybe.util.SecurityUtil;
 
 @Service
@@ -52,6 +54,12 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
 
     @Autowired
     private DeckWordRepository deckWordRepository;
+
+    @Autowired
+    private TranslateTtsService ttsService;
+
+    @Autowired
+    private CloudinaryService cloudinaryService;
 
     @Value("${gemini.api.key}")
     private String geminiApiKey;
@@ -118,6 +126,7 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
             return callGeminiForText(prompt, false);
         } catch (Exception e) {
             System.out.println("Lỗi chat Gemini API: " + e.getMessage());
+            e.printStackTrace();
             return "AI đang bận tạm thời. Bạn thử lại sau ít giây nhé.";
         }
     }
@@ -218,8 +227,30 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
                     }
                 });
 
+        ensureAudioUrl(vocab, normalized);
+
         vocabCache.put(key, vocab);
         return vocab;
+    }
+
+    private void ensureAudioUrl(VocabularyEntity vocab, String englishWord) {
+        if (vocab.getAudioUrl() != null && !vocab.getAudioUrl().isBlank()) {
+            return;
+        }
+
+        try {
+            byte[] mp3 = ttsService.synthesizeEnglishToMp3(englishWord);
+            String audioPublicId = "vocab/" + sanitize(englishWord) + "_audio";
+            String audioUrl = cloudinaryService.uploadAudioMp3(mp3, "flashcards/audio", audioPublicId);
+            vocab.setAudioUrl(audioUrl);
+            vocabularyRepository.save(vocab);
+        } catch (Exception ex) {
+            System.out.println("[WARN] Không tạo được audio cho từ '" + englishWord + "': " + ex.getMessage());
+        }
+    }
+
+    private String sanitize(String raw) {
+        return raw.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_\\-]+", "_");
     }
 
     private List<TopicWord> generateTopicWords(String topic) {
@@ -353,24 +384,37 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         headers.set("X-goog-api-key", geminiApiKey);
 
         try {
+            System.out.println("[DEBUG] Calling Gemini API with URL: " + API_URL);
+            System.out.println("[DEBUG] API Key is set: " + (geminiApiKey != null && !geminiApiKey.isEmpty()));
+            
             HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(API_URL, HttpMethod.POST, entity, String.class);
 
+            System.out.println("[DEBUG] Gemini API Response Status: " + response.getStatusCode());
+            
             ObjectMapper mapper = new ObjectMapper();
             var responseJson = mapper.readTree(response.getBody());
             String text = responseJson.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText("");
             return normalizeGeminiText(text);
         } catch (Exception e) {
+            System.out.println("[ERROR] First attempt failed: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
+            
             if (allowFallback) {
                 try {
+                    System.out.println("[DEBUG] Trying fallback API URL: " + FALLBACK_API_URL);
                     HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
                     ResponseEntity<String> fallbackResponse = restTemplate.exchange(FALLBACK_API_URL, HttpMethod.POST, entity, String.class);
 
+                    System.out.println("[DEBUG] Fallback API Response Status: " + fallbackResponse.getStatusCode());
+                    
                     ObjectMapper mapper = new ObjectMapper();
                     var responseJson = mapper.readTree(fallbackResponse.getBody());
                     String text = responseJson.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText("");
                     return normalizeGeminiText(text);
                 } catch (Exception fallbackError) {
+                    System.out.println("[ERROR] Fallback also failed: " + fallbackError.getClass().getName() + " - " + fallbackError.getMessage());
+                    fallbackError.printStackTrace();
                     throw new RuntimeException("Không gọi được Gemini API", fallbackError);
                 }
             }
