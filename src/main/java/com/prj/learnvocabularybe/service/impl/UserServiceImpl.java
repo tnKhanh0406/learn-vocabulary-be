@@ -2,9 +2,14 @@ package com.prj.learnvocabularybe.service.impl;
 
 import com.prj.learnvocabularybe.dto.request.ChangePasswordRequest;
 import com.prj.learnvocabularybe.dto.request.UpdateProfileRequest;
+import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
+import com.prj.learnvocabularybe.dto.response.FolderSummaryResponse;
 import com.prj.learnvocabularybe.dto.response.SearchUserResponse;
 import com.prj.learnvocabularybe.dto.response.UserProfileResponse;
+import com.prj.learnvocabularybe.dto.response.UserPublicResponse;
 import com.prj.learnvocabularybe.entity.UserEntity;
+import com.prj.learnvocabularybe.repository.DeckRepository;
+import com.prj.learnvocabularybe.repository.FolderRepository;
 import com.prj.learnvocabularybe.repository.UserRepository;
 import com.prj.learnvocabularybe.service.CloudinaryService;
 import com.prj.learnvocabularybe.service.UserService;
@@ -25,6 +30,8 @@ public class UserServiceImpl implements UserService {
     private final SecurityUtil securityUtil;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
+    private final DeckRepository deckRepository;
+    private final FolderRepository folderRepository;
 
     @Override
     public List<SearchUserResponse> searchUsersByUsername(String q) {
@@ -123,6 +130,21 @@ public class UserServiceImpl implements UserService {
         user.setAvatarUrl(avatarUrl);
         userRepository.save(user);
         return buildProfileResponse(user);
+    }
+
+    @Override
+    public UserPublicResponse getPublicUserInfo(Long userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        List<DeckSummaryResponse> publicDecks = deckRepository.searchPublicDecksByUserId(userId);
+        List<FolderSummaryResponse> publicFolders = folderRepository.searchPublicFoldersByUserId(userId);
+        return new UserPublicResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getAvatarUrl(),
+                publicDecks,
+                publicFolders
+        );
     }
 
     // Tạo UserProfileResponse từ entity + đếm deck/folder

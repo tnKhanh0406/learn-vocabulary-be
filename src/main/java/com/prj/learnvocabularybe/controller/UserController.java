@@ -4,6 +4,7 @@ import com.prj.learnvocabularybe.dto.request.ChangePasswordRequest;
 import com.prj.learnvocabularybe.dto.request.UpdateProfileRequest;
 import com.prj.learnvocabularybe.dto.response.SearchUserResponse;
 import com.prj.learnvocabularybe.dto.response.UserProfileResponse;
+import com.prj.learnvocabularybe.dto.response.UserPublicResponse;
 import com.prj.learnvocabularybe.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -50,5 +51,10 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> updateAvatar(
             @RequestParam("avatar") MultipartFile avatar) throws Exception {
         return ResponseEntity.ok(userService.updateAvatar(avatar));
+    }
+
+    @GetMapping("/{userId}/public")
+    public UserPublicResponse getPublicUserInfo(@PathVariable Long userId) {
+        return userService.getPublicUserInfo(userId);
     }
 }

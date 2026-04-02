@@ -4,6 +4,7 @@ import com.prj.learnvocabularybe.dto.request.ChangePasswordRequest;
 import com.prj.learnvocabularybe.dto.request.UpdateProfileRequest;
 import com.prj.learnvocabularybe.dto.response.SearchUserResponse;
 import com.prj.learnvocabularybe.dto.response.UserProfileResponse;
+import com.prj.learnvocabularybe.dto.response.UserPublicResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -24,4 +25,6 @@ public interface UserService {
 
     // Upload ảnh đại diện lên Cloudinary
     UserProfileResponse updateAvatar(MultipartFile avatar) throws Exception;
+
+    UserPublicResponse getPublicUserInfo(Long userId);
 }

@@ -317,6 +317,11 @@ public class DeckServiceImpl implements DeckService {
         return deckRepository.searchPublicDecksByName(securityUtil.getCurrentUser().getId(), q);
     }
 
+    @Override
+    public List<DeckSummaryResponse> getPublicDecksByUserId(Long userId) {
+        return deckRepository.searchPublicDecksByUserId(userId);
+    }
+
     private static WordMeaningEntity getWordMeaningEntity(DeckWordEntity srcDw, UserEntity currentUser) {
         WordMeaningEntity srcMeaning = srcDw.getWordMeaning();
 

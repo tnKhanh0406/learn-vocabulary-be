@@ -1,17 +1,20 @@
 package com.prj.learnvocabularybe.repository;
 
-import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
-import com.prj.learnvocabularybe.entity.DeckEntity;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
+import com.prj.learnvocabularybe.entity.DeckEntity;
 
 public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
+    Optional<DeckEntity> findFirstByUser_IdAndTopicIgnoreCase(Long userId, String topic);
+
     @Query("""
     SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
         d.id,
@@ -115,4 +118,37 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     """)
     List<DeckSummaryResponse> searchPublicDecksByName(@Param("userId") Long userId,
                                                       @Param("q") String q);
+
+    @Query("""
+        SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
+            d.id,
+            d.name,
+            COUNT(dw.id),
+            d.user.username,
+            d.user.avatarUrl
+        )
+        FROM DeckEntity d
+        LEFT JOIN d.deckWords dw
+        WHERE d.user.id = :userId
+          AND d.isPublic = true
+        GROUP BY d.id, d.name, d.user.username, d.user.avatarUrl
+        ORDER BY d.createdAt DESC
+    """)
+    List<DeckSummaryResponse> searchPublicDecksByUserId(Long userId);
+
+    @Query("""
+    SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
+        d.id,
+        d.name,
+        COUNT(dw.id),
+        d.user.username,
+        d.user.avatarUrl
+    )
+    FROM DeckEntity d
+    LEFT JOIN d.deckWords dw
+    WHERE d.folder.id = :folderId
+    AND d.isPublic = true
+    GROUP BY d.id, d.name, d.user.username, d.user.avatarUrl
+""")
+    List<DeckSummaryResponse> findDeckSummariesPublicByFolderId(Long folderId);
 }
