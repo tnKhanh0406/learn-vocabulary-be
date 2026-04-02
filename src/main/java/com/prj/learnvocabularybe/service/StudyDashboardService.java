@@ -65,7 +65,12 @@ public class StudyDashboardService {
         }
 
         Set<LocalDate> dateSet = Set.copyOf(reviewDates);
-        LocalDate cursor = LocalDate.now();
+        LocalDate cursor = reviewDates.stream()
+                .max(LocalDate::compareTo)
+                .orElse(null);
+        if (cursor == null) {
+            return 0;
+        }
         int streak = 0;
 
         while (dateSet.contains(cursor)) {
