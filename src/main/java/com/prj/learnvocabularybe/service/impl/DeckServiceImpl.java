@@ -48,10 +48,11 @@ public class DeckServiceImpl implements DeckService {
 
     private final TranslateTtsService ttsService;
     private final CloudinaryService cloudinaryService;
+    private final SecurityUtil securityUtil;
 
     @Override
     public List<DeckSummaryResponse> getAllDecks(String q) {
-        Long userId = SecurityUtil.getCurrentUser().getId();
+        Long userId = securityUtil.getCurrentUser().getId();
         return deckRepository.searchMyDecksByName(userId, q);
     }
 
@@ -59,7 +60,7 @@ public class DeckServiceImpl implements DeckService {
     public DeckResponse getDeckById(Long id) {
         DeckEntity deckEntity = deckRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Deck not found with id: " + id));
-        boolean isOwner = deckEntity.getUser().getId().equals(SecurityUtil.getCurrentUser().getId());
+        boolean isOwner = deckEntity.getUser().getId().equals(securityUtil.getCurrentUser().getId());
         boolean canAccess = isOwner || Boolean.TRUE.equals(deckEntity.getIsPublic());
         if (!canAccess) {
             throw new RuntimeException("Forbidden");
@@ -71,7 +72,7 @@ public class DeckServiceImpl implements DeckService {
     @Transactional
     @Override
     public DeckResponse createDeck(DeckRequest req, List<MultipartFile> images, List<Integer> imageIndexes) throws Exception {
-        UserEntity currentUser = SecurityUtil.getCurrentUser();
+        UserEntity currentUser = securityUtil.getCurrentUser();
 
         if (req.words() == null || req.words().isEmpty()) {
             throw new IllegalArgumentException("words is required");
@@ -140,7 +141,7 @@ public class DeckServiceImpl implements DeckService {
                                    DeckUpdateRequest req,
                                    List<MultipartFile> images,
                                    List<Integer> imageIndexes) throws Exception {
-        UserEntity currentUser = SecurityUtil.getCurrentUser();
+        UserEntity currentUser = securityUtil.getCurrentUser();
 
         DeckEntity deck = deckRepository.findById(deckId)
                 .orElseThrow(() -> new RuntimeException("Deck not found: " + deckId));
@@ -254,14 +255,14 @@ public class DeckServiceImpl implements DeckService {
 
     @Override
     public List<DeckSummaryResponse> getAllDecksNotInFolder() {
-        return deckRepository.getDeckSummariesNotInFolderByUserId(SecurityUtil.getCurrentUser().getId());
+        return deckRepository.getDeckSummariesNotInFolderByUserId(securityUtil.getCurrentUser().getId());
     }
 
     @Override
     public DeckResponse addDeckToFolder(Long deckId, Long folderId) {
         DeckEntity deck = deckRepository.findById(deckId)
                 .orElseThrow(() -> new RuntimeException("Deck not found with id: " + deckId));
-        if (!deck.getUser().getId().equals(SecurityUtil.getCurrentUser().getId())) {
+        if (!deck.getUser().getId().equals(securityUtil.getCurrentUser().getId())) {
             throw new RuntimeException("Forbidden");
         }
         deckRepository.addDeckToFolder(deckId, folderId);
@@ -272,7 +273,7 @@ public class DeckServiceImpl implements DeckService {
     @Transactional
     @Override
     public DeckResponse copyDeck(Long sourceDeckId) {
-        UserEntity currentUser = SecurityUtil.getCurrentUser();
+        UserEntity currentUser = securityUtil.getCurrentUser();
 
         DeckEntity source = deckRepository.findByIdWithWords(sourceDeckId)
                 .orElseThrow(() -> new RuntimeException("Deck not found: " + sourceDeckId));
@@ -313,7 +314,7 @@ public class DeckServiceImpl implements DeckService {
 
     @Override
     public List<DeckSummaryResponse> searchPublicDecksByName(String q) {
-        return deckRepository.searchPublicDecksByName(SecurityUtil.getCurrentUser().getId(), q);
+        return deckRepository.searchPublicDecksByName(securityUtil.getCurrentUser().getId(), q);
     }
 
     private static WordMeaningEntity getWordMeaningEntity(DeckWordEntity srcDw, UserEntity currentUser) {
