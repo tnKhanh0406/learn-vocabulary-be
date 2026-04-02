@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.prj.learnvocabularybe.dto.request.AddDecksToFolderRequest;
 import com.prj.learnvocabularybe.dto.request.FolderRequest;
+import com.prj.learnvocabularybe.dto.response.FolderPublicResponse;
 import com.prj.learnvocabularybe.dto.response.FolderResponse;
 import com.prj.learnvocabularybe.dto.response.FolderSummaryResponse;
 import com.prj.learnvocabularybe.service.FolderService;
@@ -73,5 +74,10 @@ public class FolderController {
                                                               @PathVariable Long deckId) {
         FolderResponse response = folderService.removeDeckFromFolder(folderId, deckId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{folderId}/public")
+    public FolderPublicResponse getFolderPublicById(@PathVariable Long folderId) {
+        return folderService.getFolderPublicById(folderId);
     }
 }

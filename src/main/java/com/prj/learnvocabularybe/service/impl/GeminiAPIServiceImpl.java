@@ -61,6 +61,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
     @Autowired
     private CloudinaryService cloudinaryService;
 
+    @Autowired
+    private SecurityUtil securityUtil;
+
     @Value("${gemini.api.key}")
     private String geminiApiKey;
 
@@ -111,7 +114,7 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         try {
             String topic = extractRequestedTopic(question);
             if (topic != null) {
-                UserEntity currentUser = SecurityUtil.getCurrentUser();
+                UserEntity currentUser = securityUtil.getCurrentUser();
                 Optional<DeckEntity> existingDeck = deckRepository.findFirstByUser_IdAndTopicIgnoreCase(currentUser.getId(), topic);
                 if (existingDeck.isPresent()) {
                     DeckEntity deck = existingDeck.get();

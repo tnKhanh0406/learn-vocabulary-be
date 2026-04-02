@@ -38,6 +38,9 @@ public class StudyController {
     @Autowired
     private StudyDashboardService studyDashboardService;
 
+    @Autowired
+    private SecurityUtil securityUtil;
+
     // 1. API Lấy danh sách từ cần học hôm nay
     // Ví dụ gọi: GET /api/study/today?userId=1
     @GetMapping("/today")
@@ -87,7 +90,7 @@ public class StudyController {
     public ResponseEntity<StudyDashboardResponse> getDashboard(
             @RequestParam(value = "userId", required = false) Long userId
     ) {
-        Long resolvedUserId = userId != null ? userId : SecurityUtil.getCurrentUser().getId();
+        Long resolvedUserId = userId != null ? userId : securityUtil.getCurrentUser().getId();
         return ResponseEntity.ok(studyDashboardService.getDashboard(resolvedUserId));
     }
 }
