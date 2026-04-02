@@ -1,7 +1,7 @@
 package com.prj.learnvocabularybe.config;
 
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,7 +16,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -42,6 +43,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     // Cho phép đăng ký / đăng nhập không cần token
                     .requestMatchers("/api/auth/**").permitAll()
+                    // Cho phép màn Home lấy dashboard thống kê khi chưa đăng nhập trong chế độ test/demo
+                    .requestMatchers("/api/study/dashboard").permitAll()
+                    // Cho phép chat AI dùng được ở web/mobile test mà chưa cần đăng nhập
+                    .requestMatchers("/api/study/chat").permitAll()
                     // Tất cả API còn lại cần token hợp lệ
                     .anyRequest().authenticated()
             )
@@ -65,12 +70,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Cho phép tất cả origin khi test (production nên thu hẹp lại)
-        config.setAllowedOriginPatterns(List.of("*"));
+        // Chỉ cho phép web dev server khi test; mobile app không bị giới hạn bởi CORS
+        config.setAllowedOriginPatterns(List.of("http://localhost:8081", "http://192.168.115.104:8081"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
-        config.setAllowCredentials(true);
+        config.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

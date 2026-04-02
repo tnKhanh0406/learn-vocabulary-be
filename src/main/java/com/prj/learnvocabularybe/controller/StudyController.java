@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,13 +16,15 @@ import com.prj.learnvocabularybe.dto.request.ChatRequest;
 import com.prj.learnvocabularybe.dto.request.ReviewActionRequest;
 import com.prj.learnvocabularybe.dto.response.AiExplanationResponse;
 import com.prj.learnvocabularybe.dto.response.ChatResponse;
+import com.prj.learnvocabularybe.dto.response.StudyDashboardResponse;
 import com.prj.learnvocabularybe.dto.response.StudyWordResponse;
 import com.prj.learnvocabularybe.service.GeminiAPIService;
 import com.prj.learnvocabularybe.service.SpacedRepetitionService;
+import com.prj.learnvocabularybe.service.StudyDashboardService;
+import com.prj.learnvocabularybe.util.SecurityUtil;
 
 @RestController
 @RequestMapping("/api/study")
-@CrossOrigin(origins = "*")
 public class StudyController {
 
     @Autowired
@@ -31,6 +32,12 @@ public class StudyController {
 
     @Autowired
     private GeminiAPIService geminiAPIService;
+
+    @Autowired
+    private StudyDashboardService studyDashboardService;
+
+    @Autowired
+    private SecurityUtil securityUtil;
 
     // 1. API Lấy danh sách từ cần học hôm nay
     // Ví dụ gọi: GET /api/study/today?userId=1
@@ -75,5 +82,20 @@ public class StudyController {
 
         String answer = geminiAPIService.chat(question.trim());
         return ResponseEntity.ok(new ChatResponse(answer));
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<StudyDashboardResponse> getDashboard(
+            @RequestParam(value = "userId", required = false) Long userId
+    ) {
+        Long resolvedUserId = userId;
+        if (resolvedUserId == null) {
+            try {
+                resolvedUserId = securityUtil.getCurrentUser().getId();
+            } catch (Exception ignored) {
+                resolvedUserId = 2L;
+            }
+        }
+        return ResponseEntity.ok(studyDashboardService.getDashboard(resolvedUserId));
     }
 }
