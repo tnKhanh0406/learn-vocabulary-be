@@ -44,7 +44,7 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
                 .findByUserIdAndWordMeaningId(userId, request.getWordMeaningId())
                 .orElseGet(() -> createNewProgress(userId, request.getWordMeaningId()));
 
-        int grade = request.getGrade(); // 1: Quên, 2: Khó, 3: Nhớ, 4: Rất nhớ
+        int grade = request.getGrade(); // 1: Quên, 2: Hơi quên, 3: Nhớ, 4: Rất nhớ
 
         // Lấy các giá trị hiện tại
         int currentLapses = Objects.requireNonNullElse(progress.getLapses(), 0);
