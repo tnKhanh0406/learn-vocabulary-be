@@ -23,10 +23,11 @@ public class FolderServiceImpl implements FolderService {
 
     private final FolderRepository folderRepository;
     private final DeckRepository deckRepository;
+    private final SecurityUtil securityUtil;
 
     @Override
     public List<FolderSummaryResponse> getAllFolders() {
-        List<FolderEntity> folderEntities = folderRepository.findAllByUserId(SecurityUtil.getCurrentUser().getId());
+        List<FolderEntity> folderEntities = folderRepository.findAllByUserId(securityUtil.getCurrentUser().getId());
         return folderEntities.stream()
                 .map(FolderMapper::map)
                 .toList();
@@ -49,7 +50,7 @@ public class FolderServiceImpl implements FolderService {
         FolderEntity folderEntity = new FolderEntity();
         folderEntity.setName(request.name());
         folderEntity.setDescription(request.description());
-        folderEntity.setUser(SecurityUtil.getCurrentUser());
+        folderEntity.setUser(securityUtil.getCurrentUser());
         folderRepository.save(folderEntity);
 
         return new FolderResponse(

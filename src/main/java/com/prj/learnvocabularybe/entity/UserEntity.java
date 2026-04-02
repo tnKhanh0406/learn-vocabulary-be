@@ -23,6 +23,13 @@ public class UserEntity {
     private String password;
     private String avatarUrl;
 
+    // Cài đặt nhắc học: bật/tắt và giờ nhắc (định dạng "HH:mm", ví dụ "08:00")
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private Boolean notificationEnabled = false;
+
+    @Column(length = 5, columnDefinition = "varchar(5) default '08:00'")
+    private String notificationTime = "08:00";
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
