@@ -24,4 +24,15 @@ public interface UserWordProgressRepository extends JpaRepository<UserWordProgre
     // Lấy danh sách các từ hay quên (phục vụ minigame)
     @Query("SELECT u FROM UserWordProgressEntity u WHERE u.user.id = :userId AND u.lapses > :lapsesThreshold")
     List<UserWordProgressEntity> findForgottenWords(@Param("userId") Long userId, @Param("lapsesThreshold") Integer lapsesThreshold);
+
+    long countByUserId(Long userId);
+
+    @Query("""
+        SELECT COUNT(u)
+        FROM UserWordProgressEntity u
+        WHERE u.user.id = :userId
+          AND COALESCE(u.repetitionCount, 0) >= 2
+          AND COALESCE(u.lapses, 0) <= 1
+    """)
+    long countRememberedWords(@Param("userId") Long userId);
 }

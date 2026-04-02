@@ -17,9 +17,12 @@ import com.prj.learnvocabularybe.dto.request.ChatRequest;
 import com.prj.learnvocabularybe.dto.request.ReviewActionRequest;
 import com.prj.learnvocabularybe.dto.response.AiExplanationResponse;
 import com.prj.learnvocabularybe.dto.response.ChatResponse;
+import com.prj.learnvocabularybe.dto.response.StudyDashboardResponse;
 import com.prj.learnvocabularybe.dto.response.StudyWordResponse;
 import com.prj.learnvocabularybe.service.GeminiAPIService;
 import com.prj.learnvocabularybe.service.SpacedRepetitionService;
+import com.prj.learnvocabularybe.service.StudyDashboardService;
+import com.prj.learnvocabularybe.util.SecurityUtil;
 
 @RestController
 @RequestMapping("/api/study")
@@ -31,6 +34,9 @@ public class StudyController {
 
     @Autowired
     private GeminiAPIService geminiAPIService;
+
+    @Autowired
+    private StudyDashboardService studyDashboardService;
 
     // 1. API Lấy danh sách từ cần học hôm nay
     // Ví dụ gọi: GET /api/study/today?userId=1
@@ -75,5 +81,13 @@ public class StudyController {
 
         String answer = geminiAPIService.chat(question.trim());
         return ResponseEntity.ok(new ChatResponse(answer));
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<StudyDashboardResponse> getDashboard(
+            @RequestParam(value = "userId", required = false) Long userId
+    ) {
+        Long resolvedUserId = userId != null ? userId : SecurityUtil.getCurrentUser().getId();
+        return ResponseEntity.ok(studyDashboardService.getDashboard(resolvedUserId));
     }
 }
