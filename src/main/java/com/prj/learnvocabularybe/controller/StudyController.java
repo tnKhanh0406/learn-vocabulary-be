@@ -23,6 +23,9 @@ import com.prj.learnvocabularybe.service.SpacedRepetitionService;
 import com.prj.learnvocabularybe.service.StudyDashboardService;
 import com.prj.learnvocabularybe.util.SecurityUtil;
 
+/**
+ * Gộp các endpoint liên quan đến học tập, AI và dashboard.
+ */
 @RestController
 @RequestMapping("/api/study")
 public class StudyController {
@@ -39,39 +42,40 @@ public class StudyController {
     @Autowired
     private SecurityUtil securityUtil;
 
-    // 1. API Lấy danh sách từ cần học hôm nay
-    // Ví dụ gọi: GET /api/study/today?userId=1
+    /**
+     * Lấy danh sách từ cần ôn tập trong ngày hôm nay.
+     */
     @GetMapping("/today")
     public ResponseEntity<List<StudyWordResponse>> getWordsToReviewToday(@RequestParam Long userId) {
-        // Trong thực tế, userId thường được lấy từ Token bảo mật (JWT), 
-        // nhưng tạm thời truyền qua tham số để test cho dễ.
         List<StudyWordResponse> words = spacedRepetitionService.getWordsToReviewToday(userId);
         return ResponseEntity.ok(words);
     }
 
-    // 2. API Lưu kết quả sau khi người dùng bấm nút đánh giá (Quên, Nhớ...)
-    // Ví dụ gọi: POST /api/study/review?userId=1
+    /**
+     * Lưu kết quả đánh giá sau khi người dùng học xong một từ.
+     */
     @PostMapping("/review")
     public ResponseEntity<String> submitReviewResult(
             @RequestParam Long userId,
             @RequestBody ReviewActionRequest request) {
-        
         spacedRepetitionService.processUserReview(userId, request);
         return ResponseEntity.ok("Đã cập nhật tiến độ học tập thành công!");
     }
 
-    // 3. API Gọi Trợ lý AI giải nghĩa từ vựng
-    // Ví dụ gọi: GET /api/study/ai-explain/15?word=apple
+    /**
+     * Lấy giải nghĩa AI cho một từ vựng cụ thể.
+     */
     @GetMapping("/ai-explain/{wordMeaningId}")
     public ResponseEntity<AiExplanationResponse> getAiExplanation(
             @PathVariable Long wordMeaningId,
             @RequestParam String word) {
-        
         AiExplanationResponse response = geminiAPIService.getExplanation(wordMeaningId, word);
         return ResponseEntity.ok(response);
     }
 
-    // 4. API Chat với AI
+    /**
+     * Chat tự do với AI.
+     */
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> chatWithAI(@RequestBody ChatRequest request) {
         String question = request.getContent();
@@ -84,6 +88,9 @@ public class StudyController {
         return ResponseEntity.ok(new ChatResponse(answer));
     }
 
+    /**
+     * Lấy tổng quan dashboard học tập.
+     */
     @GetMapping("/dashboard")
     public ResponseEntity<StudyDashboardResponse> getDashboard(
             @RequestParam(value = "userId", required = false) Long userId

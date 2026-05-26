@@ -8,15 +8,24 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
+/**
+ * Repository cho NotificationEntity.
+ */
 public interface NotificationRepository extends JpaRepository<NotificationEntity, Long> {
 
-    // Lấy 20 thông báo gần nhất của user
+    /**
+     * Lấy tối đa 20 thông báo gần nhất của user.
+     */
     List<NotificationEntity> findTop20ByUserIdOrderByCreatedAtDesc(Long userId);
 
-    // Đếm thông báo chưa đọc
+    /**
+     * Đếm số thông báo chưa đọc của user.
+     */
     long countByUserIdAndIsReadFalse(Long userId);
 
-    // Đánh dấu tất cả là đã đọc
+    /**
+     * Đánh dấu toàn bộ thông báo của user là đã đọc.
+     */
     @Modifying
     @Query("UPDATE NotificationEntity n SET n.isRead = true WHERE n.user.id = :userId AND n.isRead = false")
     void markAllAsRead(@Param("userId") Long userId);

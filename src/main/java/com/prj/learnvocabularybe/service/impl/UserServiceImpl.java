@@ -22,6 +22,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Cài đặt các nghiệp vụ liên quan đến hồ sơ người dùng, mật khẩu và avatar.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -33,18 +36,27 @@ public class UserServiceImpl implements UserService {
     private final DeckRepository deckRepository;
     private final FolderRepository folderRepository;
 
+    /**
+     * Tìm người dùng theo username, loại trừ chính người đang đăng nhập.
+     */
     @Override
     public List<SearchUserResponse> searchUsersByUsername(String q) {
         Long userId = securityUtil.getCurrentUser().getId();
         return userRepository.searchUsersByUsername(q, userId);
     }
 
+    /**
+     * Lấy hồ sơ của người dùng hiện tại.
+     */
     @Override
     public UserProfileResponse getMyProfile() {
         UserEntity user = securityUtil.getCurrentUser();
         return buildProfileResponse(user);
     }
 
+    /**
+     * Cập nhật username và email nếu người dùng cung cấp giá trị mới hợp lệ.
+     */
     @Override
     @Transactional
     public UserProfileResponse updateProfile(UpdateProfileRequest request) {
@@ -82,6 +94,9 @@ public class UserServiceImpl implements UserService {
         return buildProfileResponse(user);
     }
 
+    /**
+     * Đổi mật khẩu sau khi xác minh mật khẩu cũ và kiểm tra độ dài mật khẩu mới.
+     */
     @Override
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
@@ -105,6 +120,9 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    /**
+     * Upload ảnh đại diện mới lên Cloudinary và lưu URL vào hồ sơ người dùng.
+     */
     @Override
     @Transactional
     public UserProfileResponse updateAvatar(MultipartFile avatar) throws Exception {
@@ -132,6 +150,9 @@ public class UserServiceImpl implements UserService {
         return buildProfileResponse(user);
     }
 
+    /**
+     * Lấy thông tin public của người dùng kèm deck và folder public.
+     */
     @Override
     public UserPublicResponse getPublicUserInfo(Long userId) {
         UserEntity user = userRepository.findById(userId)

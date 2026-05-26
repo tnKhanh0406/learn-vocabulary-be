@@ -7,9 +7,18 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
+/**
+ * Repository cho FolderEntity và các truy vấn tổng hợp folder.
+ */
 public interface FolderRepository extends JpaRepository<FolderEntity, Long> {
+    /**
+     * Lấy toàn bộ folder của một user.
+     */
     List<FolderEntity> findAllByUserId(Long userId);
 
+    /**
+     * Lấy folder public của một user để hiển thị trên profile public.
+     */
     @Query("""
         SELECT new com.prj.learnvocabularybe.dto.response.FolderSummaryResponse(
             f.id,

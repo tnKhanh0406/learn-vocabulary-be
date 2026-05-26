@@ -21,6 +21,9 @@ import com.prj.learnvocabularybe.repository.UserWordProgressRepository;
 import com.prj.learnvocabularybe.repository.WordMeaningRepository;
 import com.prj.learnvocabularybe.service.SpacedRepetitionService;
 
+/**
+ * Cài đặt thuật toán lặp lại ngắt quãng cho việc học từ.
+ */
 @Service
 public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
 
@@ -36,6 +39,9 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
     @Autowired
     private WordMeaningRepository wordMeaningRepository;
 
+    /**
+     * Ghi nhận một lần ôn tập và cập nhật tiến độ theo thuật toán SM-2.
+     */
     @Override
     @Transactional
     public void processUserReview(Long userId, ReviewActionRequest request) {
@@ -91,6 +97,9 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
         reviewLogsRepository.save(log);
     }
 
+    /**
+     * Lấy danh sách từ cần ôn tập trong ngày hôm nay.
+     */
     @Override
     public List<StudyWordResponse> getWordsToReviewToday(Long userId) {
         // Lấy các từ có next_review_date <= hiện tại
@@ -111,7 +120,9 @@ public class SpacedRepetitionServiceImpl implements SpacedRepetitionService {
         }).collect(Collectors.toList());
     }
 
-    // Hàm phụ trợ tạo bản ghi mới
+    /**
+     * Tạo bản ghi tiến độ mới với giá trị mặc định của SM-2.
+     */
     private UserWordProgressEntity createNewProgress(Long userId, Long wordMeaningId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));

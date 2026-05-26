@@ -13,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Cài đặt nghiệp vụ quản lý lịch nhắc học của người dùng.
+ */
 @Service
 @RequiredArgsConstructor
 public class StudyReminderServiceImpl implements StudyReminderService {
@@ -23,6 +26,9 @@ public class StudyReminderServiceImpl implements StudyReminderService {
     private final StudyReminderRepository reminderRepository;
     private final SecurityUtil securityUtil;
 
+    /**
+     * Lấy toàn bộ lịch nhắc của người dùng hiện tại.
+     */
     @Override
     public List<StudyReminderResponse> getMyReminders() {
         UserEntity user = securityUtil.getCurrentUser();
@@ -33,6 +39,9 @@ public class StudyReminderServiceImpl implements StudyReminderService {
                 .toList();
     }
 
+    /**
+     * Thêm lịch nhắc mới nếu chưa vượt quá giới hạn và không trùng giờ.
+     */
     @Override
     @Transactional
     public StudyReminderResponse addReminder(StudyReminderRequest request) {
@@ -57,6 +66,9 @@ public class StudyReminderServiceImpl implements StudyReminderService {
         return toResponse(reminderRepository.save(entity));
     }
 
+    /**
+     * Cập nhật giờ nhắc hoặc trạng thái bật/tắt của lịch.
+     */
     @Override
     @Transactional
     public StudyReminderResponse updateReminder(Long id, StudyReminderRequest request) {
@@ -80,6 +92,9 @@ public class StudyReminderServiceImpl implements StudyReminderService {
         return toResponse(reminderRepository.save(entity));
     }
 
+    /**
+     * Xóa lịch nhắc theo id sau khi kiểm tra quyền sở hữu.
+     */
     @Override
     @Transactional
     public void deleteReminder(Long id) {
@@ -90,7 +105,9 @@ public class StudyReminderServiceImpl implements StudyReminderService {
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Tìm lịch nhắc và kiểm tra quyền sở hữu */
+    /**
+     * Tìm lịch nhắc và kiểm tra quyền sở hữu của user hiện tại.
+     */
     private StudyReminderEntity findAndCheckOwner(Long id, UserEntity currentUser) {
         StudyReminderEntity entity = reminderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lịch nhắc"));

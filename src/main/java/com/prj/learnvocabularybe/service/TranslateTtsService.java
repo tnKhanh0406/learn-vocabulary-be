@@ -7,9 +7,15 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Chuyển văn bản tiếng Anh thành file MP3 bằng Google Translate TTS.
+ */
 @Service
 public class TranslateTtsService {
 
+    /**
+     * Tạo dữ liệu MP3 từ một chuỗi tiếng Anh để upload hoặc lưu trữ.
+     */
     public byte[] synthesizeEnglishToMp3(String englishText) {
         String encoded = URLEncoder.encode(englishText, StandardCharsets.UTF_8);
         String url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=" + encoded;

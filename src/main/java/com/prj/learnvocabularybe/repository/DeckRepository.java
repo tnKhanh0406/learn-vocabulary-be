@@ -12,9 +12,18 @@ import org.springframework.transaction.annotation.Transactional;
 import com.prj.learnvocabularybe.dto.response.DeckSummaryResponse;
 import com.prj.learnvocabularybe.entity.DeckEntity;
 
+/**
+ * Repository cho thao tác với DeckEntity và các truy vấn tổng hợp deck.
+ */
 public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
+    /**
+     * Tìm deck theo chủ đề của user, dùng khi chat AI yêu cầu deck theo topic.
+     */
     Optional<DeckEntity> findFirstByUser_IdAndTopicIgnoreCase(Long userId, String topic);
 
+    /**
+     * Lấy danh sách deck trong folder kèm số lượng từ và thông tin chủ sở hữu.
+     */
     @Query("""
     SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
         d.id,
@@ -30,6 +39,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
 """)
     List<DeckSummaryResponse> findDeckSummariesByFolderId(Long folderId);
 
+    /**
+     * Tìm deck của chính người dùng hiện tại theo tên.
+     */
     @Query("""
         SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
             d.id,
@@ -57,6 +69,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     """)
     void addDecksToFolder(Long folderId, List<Long> deckIds);
 
+    /**
+     * Lấy các deck của user hiện tại chưa nằm trong folder nào.
+     */
     @Query("""
         SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
             d.id,
@@ -72,6 +87,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
 """)
     List<DeckSummaryResponse> getDeckSummariesNotInFolderByUserId(@Param("userId") Long userId);
 
+    /**
+     * Gỡ một deck khỏi folder.
+     */
     @Modifying
     @Transactional
     @Query("""
@@ -81,6 +99,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
 """)
     void removeDeckFromFolder(Long deckId);
 
+    /**
+     * Gắn một deck vào folder theo id deck và id folder.
+     */
     @Modifying
     @Transactional
     @Query("""
@@ -90,6 +111,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
 """)
     void addDeckToFolder(Long deckId, Long folderId);
 
+    /**
+     * Lấy deck kèm toàn bộ wordMeaning đã fetch sẵn để sao chép deck.
+     */
     @Query("""
         SELECT DISTINCT d
         FROM DeckEntity d
@@ -100,6 +124,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     """)
     Optional<DeckEntity> findByIdWithWords(Long deckId);
 
+        /**
+         * Tìm deck public của người khác theo tên để phục vụ tìm kiếm.
+         */
     @Query("""
         SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
             d.id,
@@ -119,6 +146,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     List<DeckSummaryResponse> searchPublicDecksByName(@Param("userId") Long userId,
                                                       @Param("q") String q);
 
+        /**
+         * Lấy các deck public nổi bật để gợi ý học tập.
+         */
     @Query("""
         SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
             d.id,
@@ -136,6 +166,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     """)
     List<DeckSummaryResponse> findTopRecommendedPublicDecks(@Param("userId") Long userId);
 
+        /**
+         * Lấy các deck public của một user khác.
+         */
     @Query("""
         SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
             d.id,
@@ -153,6 +186,9 @@ public interface DeckRepository extends JpaRepository<DeckEntity, Long> {
     """)
     List<DeckSummaryResponse> searchPublicDecksByUserId(Long userId);
 
+        /**
+         * Lấy các deck public theo folder để hiển thị trang public folder.
+         */
     @Query("""
         SELECT new com.prj.learnvocabularybe.dto.response.DeckSummaryResponse(
             d.id,

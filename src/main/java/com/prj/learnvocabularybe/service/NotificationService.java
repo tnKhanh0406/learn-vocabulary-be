@@ -6,20 +6,33 @@ import com.prj.learnvocabularybe.dto.response.NotificationSettingsResponse;
 
 import java.util.List;
 
+/**
+ * Khai báo các nghiệp vụ thông báo và cài đặt nhắc học.
+ */
 public interface NotificationService {
 
-    // Lấy cài đặt nhắc học của user hiện tại
+    /**
+     * Lấy cài đặt nhắc học của người dùng hiện tại.
+     */
     NotificationSettingsResponse getSettings();
 
-    // Cập nhật cài đặt nhắc học (bật/tắt + giờ)
+    /**
+     * Cập nhật trạng thái bật/tắt và giờ nhắc học.
+     */
     NotificationSettingsResponse updateSettings(NotificationSettingsRequest request);
 
-    // Lấy danh sách thông báo (20 gần nhất)
+    /**
+     * Lấy danh sách thông báo gần nhất của người dùng.
+     */
     List<NotificationResponse> getMyNotifications();
 
-    // Đánh dấu 1 thông báo là đã đọc
+    /**
+     * Đánh dấu một thông báo là đã đọc.
+     */
     void markAsRead(Long notificationId);
 
-    // Đánh dấu tất cả là đã đọc
+    /**
+     * Đánh dấu toàn bộ thông báo là đã đọc.
+     */
     void markAllAsRead();
 }
