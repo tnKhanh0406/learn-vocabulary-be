@@ -37,6 +37,9 @@ import com.prj.learnvocabularybe.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Cài đặt nghiệp vụ thao tác với deck: tạo, sửa, xóa, sao chép và gắn vào folder.
+ */
 @Service
 @RequiredArgsConstructor
 public class DeckServiceImpl implements DeckService {
@@ -50,12 +53,18 @@ public class DeckServiceImpl implements DeckService {
     private final CloudinaryService cloudinaryService;
     private final SecurityUtil securityUtil;
 
+    /**
+     * Lấy danh sách deck của người dùng hiện tại, có hỗ trợ tìm kiếm.
+     */
     @Override
     public List<DeckSummaryResponse> getAllDecks(String q) {
         Long userId = securityUtil.getCurrentUser().getId();
         return deckRepository.searchMyDecksByName(userId, q);
     }
 
+    /**
+     * Lấy chi tiết deck nếu người dùng có quyền xem.
+     */
     @Override
     public DeckResponse getDeckById(Long id) {
         DeckEntity deckEntity = deckRepository.findById(id)
@@ -69,6 +78,9 @@ public class DeckServiceImpl implements DeckService {
         return DeckMapper.map(deckEntity, wordResponses);
     }
 
+    /**
+     * Tạo deck mới cùng danh sách từ, ảnh và âm thanh đi kèm.
+     */
     @Transactional
     @Override
     public DeckResponse createDeck(DeckRequest req, List<MultipartFile> images, List<Integer> imageIndexes) throws Exception {
@@ -135,6 +147,9 @@ public class DeckServiceImpl implements DeckService {
         return DeckMapper.map(saved, wordResponses);
     }
 
+    /**
+     * Cập nhật deck hiện có, giữ thứ tự từ theo request.
+     */
     @Transactional
     @Override
     public DeckResponse updateDeck(Long deckId,
@@ -236,6 +251,9 @@ public class DeckServiceImpl implements DeckService {
         return DeckMapper.map(saved, wordResponses);
     }
 
+    /**
+     * Xóa deck và dọn các word meaning không còn được dùng.
+     */
     @Override
     public void deleteDeck(Long id) {
         DeckEntity deck = deckRepository.findById(id)
@@ -253,11 +271,17 @@ public class DeckServiceImpl implements DeckService {
         }
     }
 
+    /**
+     * Lấy các deck của người dùng hiện tại chưa nằm trong folder nào.
+     */
     @Override
     public List<DeckSummaryResponse> getAllDecksNotInFolder() {
         return deckRepository.getDeckSummariesNotInFolderByUserId(securityUtil.getCurrentUser().getId());
     }
 
+    /**
+     * Gắn một deck vào folder.
+     */
     @Override
     public DeckResponse addDeckToFolder(Long deckId, Long folderId) {
         DeckEntity deck = deckRepository.findById(deckId)
@@ -270,6 +294,9 @@ public class DeckServiceImpl implements DeckService {
         return DeckMapper.map(deck, wordResponses);
     }
 
+    /**
+     * Sao chép deck hiện có cho người dùng hiện tại.
+     */
     @Transactional
     @Override
     public DeckResponse copyDeck(Long sourceDeckId) {
@@ -312,16 +339,25 @@ public class DeckServiceImpl implements DeckService {
         return DeckMapper.map(saved, wordResponses);
     }
 
+    /**
+     * Tìm deck public theo tên.
+     */
     @Override
     public List<DeckSummaryResponse> searchPublicDecksByName(String q) {
         return deckRepository.searchPublicDecksByName(securityUtil.getCurrentUser().getId(), q);
     }
 
+    /**
+     * Lấy các deck public của một user theo id.
+     */
     @Override
     public List<DeckSummaryResponse> getPublicDecksByUserId(Long userId) {
         return deckRepository.searchPublicDecksByUserId(userId);
     }
 
+    /**
+     * Sao chép dữ liệu WordMeaning để dùng trong deck mới.
+     */
     private static WordMeaningEntity getWordMeaningEntity(DeckWordEntity srcDw, UserEntity currentUser) {
         WordMeaningEntity srcMeaning = srcDw.getWordMeaning();
 
@@ -334,6 +370,9 @@ public class DeckServiceImpl implements DeckService {
         return newMeaning;
     }
 
+    /**
+     * Tạo một liên kết deck-word mới.
+     */
     private DeckWordEntity newDeckWord(DeckEntity deck, WordMeaningEntity meaning) {
         DeckWordEntity dw = new DeckWordEntity();
         dw.setDeck(deck);
@@ -341,6 +380,9 @@ public class DeckServiceImpl implements DeckService {
         return dw;
     }
 
+    /**
+     * Tạo mới meaning cho một item của deck và lưu ảnh nếu có.
+     */
     private WordMeaningEntity createMeaningForDeckItem(
             UserEntity currentUser,
             Long deckId,
@@ -366,6 +408,9 @@ public class DeckServiceImpl implements DeckService {
         return wordMeaningRepository.save(meaning);
     }
 
+    /**
+     * Lấy hoặc tạo vocabulary và đảm bảo có audio MP3 đi kèm.
+     */
     private VocabularyEntity upsertVocabularyWithAudio(String english) throws Exception {
         String normalized = english == null ? null : english.trim();
         if (normalized == null || normalized.isBlank()) {
@@ -389,6 +434,9 @@ public class DeckServiceImpl implements DeckService {
         return vocabularyRepository.save(vocab);
     }
 
+    /**
+     * Lấy vocabulary hiện có hoặc tạo mới theo từ tiếng Anh.
+     */
     private VocabularyEntity getOrCreateVocab(String word, Map<String, VocabularyEntity> vocabMap) throws Exception {
         String key = word.trim().toLowerCase();
 
@@ -410,10 +458,16 @@ public class DeckServiceImpl implements DeckService {
         return vocab;
     }
 
+    /**
+     * Chuẩn hóa chuỗi dùng làm publicId trên Cloudinary.
+     */
     private String sanitize(String s) {
         return s.toLowerCase().replaceAll("[^a-z0-9_\\-]+", "_");
     }
 
+    /**
+     * Chuyển danh sách ảnh và vị trí ảnh thành map để truy cập nhanh theo index.
+     */
     private Map<Integer, MultipartFile> toImageIndexMap(List<MultipartFile> images, List<Integer> imageIndexes) {
         Map<Integer, MultipartFile> map = new HashMap<>();
         if (images == null || imageIndexes == null) return map;

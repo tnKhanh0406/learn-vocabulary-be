@@ -12,6 +12,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Cài đặt nghiệp vụ xác thực: kiểm tra đầu vào, tạo người dùng mới,
+ * xác minh mật khẩu và sinh JWT cho client.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -20,6 +24,9 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
+    /**
+     * Đăng ký tài khoản mới với các ràng buộc cơ bản về username, email và mật khẩu.
+     */
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -45,6 +52,9 @@ public class AuthServiceImpl implements AuthService {
         return toAuthResponse(token, savedUser);
     }
 
+    /**
+     * Xác thực username/password và trả về thông tin đăng nhập cùng JWT.
+     */
     @Override
     public AuthResponse login(LoginRequest request) {
         if (request.username() == null || request.username().isBlank()) {
@@ -65,6 +75,9 @@ public class AuthServiceImpl implements AuthService {
         return toAuthResponse(token, user);
     }
 
+    /**
+     * Kiểm tra dữ liệu đăng ký trước khi ghi vào cơ sở dữ liệu.
+     */
     private void validateRegisterRequest(RegisterRequest request) {
         if (request.username() == null || request.username().isBlank()) {
             throw new IllegalArgumentException("Tên đăng nhập không được để trống");
@@ -86,6 +99,9 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    /**
+     * Chuyển entity người dùng sang response dùng chung cho đăng ký và đăng nhập.
+     */
     private AuthResponse toAuthResponse(String token, UserEntity user) {
         return new AuthResponse(
                 token,

@@ -17,6 +17,9 @@ import com.prj.learnvocabularybe.repository.UserWordProgressRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Tổng hợp số liệu dashboard học tập từ nhiều nguồn dữ liệu.
+ */
 @Service
 @RequiredArgsConstructor
 public class StudyDashboardService {
@@ -29,6 +32,9 @@ public class StudyDashboardService {
     private final ReviewLogsRepository reviewLogsRepository;
     private final DeckRepository deckRepository;
 
+    /**
+     * Xây dựng dữ liệu dashboard cho người dùng được chỉ định.
+     */
     @Transactional(readOnly = true)
     public StudyDashboardResponse getDashboard(Long userId) {
         long trackedWords = progressRepository.countByUserId(userId);
@@ -59,6 +65,9 @@ public class StudyDashboardService {
         return new StudyDashboardResponse(memoryRate, streakDays, trackedWords, recommendedDecks, forgottenWords);
     }
 
+    /**
+     * Tính chuỗi ngày liên tiếp gần nhất có hoạt động ôn tập.
+     */
     private int calculateStreak(List<LocalDate> reviewDates) {
         if (reviewDates == null || reviewDates.isEmpty()) {
             return 0;
@@ -81,6 +90,9 @@ public class StudyDashboardService {
         return streak;
     }
 
+    /**
+     * Chuyển tiến độ học thành DTO từ vựng bị quên nhiều.
+     */
     private ForgottenWordResponse toForgottenWord(UserWordProgressEntity progress) {
         var meaning = progress.getWordMeaning();
         var vocab = meaning.getVocabulary();
@@ -94,6 +106,9 @@ public class StudyDashboardService {
         );
     }
 
+    /**
+     * Trả về 0 khi giá trị null để an toàn khi sắp xếp.
+     */
     private int valueOrZero(Integer value) {
         return value == null ? 0 : value;
     }

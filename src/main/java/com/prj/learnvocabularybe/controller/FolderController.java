@@ -22,6 +22,9 @@ import com.prj.learnvocabularybe.service.FolderService;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Quản lý các endpoint thao tác với folder.
+ */
 @RestController
 @RequestMapping("/api/folders")
 @RequiredArgsConstructor
@@ -29,16 +32,25 @@ public class FolderController {
 
     private final FolderService folderService;
 
+    /**
+     * Lấy danh sách folder của người dùng hiện tại.
+     */
     @GetMapping
     public List<FolderSummaryResponse> getAllFolders() {
         return folderService.getAllFolders();
     }
 
+    /**
+     * Lấy chi tiết folder theo id.
+     */
     @GetMapping("/{folderId}")
     public FolderResponse getFolderById(@PathVariable Long folderId) {
         return folderService.getFolderById(folderId);
     }
 
+    /**
+     * Tạo một folder mới.
+     */
     @PostMapping
     public ResponseEntity<FolderResponse> createFolder(@RequestBody FolderRequest request) {
         FolderResponse response = folderService.createFolder(request);
@@ -47,6 +59,9 @@ public class FolderController {
                 .body(response);
     }
 
+    /**
+     * Cập nhật tên hoặc mô tả của folder.
+     */
     @PutMapping("/{folderId}")
     public ResponseEntity<FolderResponse> updateFolder(@PathVariable Long folderId,
                                                        @RequestBody FolderRequest request) {
@@ -54,12 +69,18 @@ public class FolderController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Xóa folder theo id.
+     */
     @DeleteMapping("/{folderId}")
     public ResponseEntity<Void> deleteFolder(@PathVariable Long folderId) {
         folderService.deleteFolder(folderId);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Thêm nhiều deck vào folder.
+     */
     @PutMapping("/{folderId}/decks")
     public ResponseEntity<FolderResponse> addDecksToFolder(@PathVariable Long folderId,
                                                            @RequestBody AddDecksToFolderRequest request) {
@@ -67,6 +88,9 @@ public class FolderController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Gỡ deck khỏi folder.
+     */
     @PutMapping("/{folderId}/decks/{deckId}/remove")
     public ResponseEntity<FolderResponse> removeDeckFromFolder(@PathVariable Long folderId,
                                                               @PathVariable Long deckId) {
@@ -74,6 +98,9 @@ public class FolderController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Lấy thông tin public của folder để người khác xem.
+     */
     @GetMapping("/{folderId}/public")
     public FolderPublicResponse getFolderPublicById(@PathVariable Long folderId) {
         return folderService.getFolderPublicById(folderId);

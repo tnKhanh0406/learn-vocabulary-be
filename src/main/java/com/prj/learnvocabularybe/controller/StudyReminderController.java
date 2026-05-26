@@ -18,6 +18,9 @@ import java.util.List;
  * PUT    /api/reminders/{id}     — sửa giờ hoặc bật/tắt một lịch
  * DELETE /api/reminders/{id}     — xóa lịch
  */
+/**
+ * CRUD lịch nhắc học.
+ */
 @RestController
 @RequestMapping("/api/reminders")
 @RequiredArgsConstructor
@@ -25,11 +28,17 @@ public class StudyReminderController {
 
     private final StudyReminderService reminderService;
 
+    /**
+     * Lấy danh sách lịch nhắc của người dùng hiện tại.
+     */
     @GetMapping
     public ResponseEntity<List<StudyReminderResponse>> getMyReminders() {
         return ResponseEntity.ok(reminderService.getMyReminders());
     }
 
+    /**
+     * Thêm một lịch nhắc mới.
+     */
     @PostMapping
     public ResponseEntity<StudyReminderResponse> addReminder(
             @RequestBody StudyReminderRequest request) {
@@ -38,6 +47,9 @@ public class StudyReminderController {
                 .body(reminderService.addReminder(request));
     }
 
+    /**
+     * Cập nhật giờ hoặc trạng thái bật/tắt của lịch nhắc.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<StudyReminderResponse> updateReminder(
             @PathVariable Long id,
@@ -45,6 +57,9 @@ public class StudyReminderController {
         return ResponseEntity.ok(reminderService.updateReminder(id, request));
     }
 
+    /**
+     * Xóa lịch nhắc theo id.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReminder(@PathVariable Long id) {
         reminderService.deleteReminder(id);

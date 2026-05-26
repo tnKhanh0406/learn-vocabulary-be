@@ -10,8 +10,14 @@ import org.springframework.stereotype.Repository;
 
 import com.prj.learnvocabularybe.entity.ReviewLogsEntity;
 
+/**
+ * Repository cho ReviewLogsEntity.
+ */
 @Repository
 public interface ReviewLogsRepository extends JpaRepository<ReviewLogsEntity, Long> {
+	/**
+	 * Lấy danh sách ngày ôn tập khác nhau của user theo thứ tự giảm dần.
+	 */
 	@Query("""
 		SELECT DISTINCT DATE(r.reviewedAt)
 		FROM ReviewLogsEntity r

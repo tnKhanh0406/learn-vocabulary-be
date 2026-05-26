@@ -7,6 +7,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
+/**
+ * Bao bọc các thao tác upload file lên Cloudinary.
+ */
 @Service
 public class CloudinaryService {
     private final Cloudinary cloudinary;
@@ -15,6 +18,9 @@ public class CloudinaryService {
         this.cloudinary = cloudinary;
     }
 
+    /**
+     * Upload ảnh và trả về URL bảo mật.
+     */
     public String uploadImage(MultipartFile file, String folder, String publicId) throws Exception {
         Map<?, ?> result = cloudinary.uploader().upload(
                 file.getBytes(),
@@ -27,6 +33,9 @@ public class CloudinaryService {
         return (String) result.get("secure_url");
     }
 
+    /**
+     * Upload file MP3 và trả về URL bảo mật.
+     */
     public String uploadAudioMp3(byte[] mp3Bytes, String folder, String publicId) throws Exception {
         Map<?, ?> result = cloudinary.uploader().upload(
                 mp3Bytes,

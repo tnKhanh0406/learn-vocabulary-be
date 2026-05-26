@@ -38,6 +38,9 @@ import com.prj.learnvocabularybe.service.GeminiAPIService;
 import com.prj.learnvocabularybe.service.TranslateTtsService;
 import com.prj.learnvocabularybe.util.SecurityUtil;
 
+/**
+ * Cài đặt các nghiệp vụ làm việc với Gemini AI: giải thích từ, chat tự do và sinh deck theo chủ đề.
+ */
 @Service
 public class GeminiAPIServiceImpl implements GeminiAPIService {
 
@@ -70,6 +73,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
     private final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
     private final String FALLBACK_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
+    /**
+     * Lấy giải thích AI cho một từ, ưu tiên đọc cache trong database trước.
+     */
     @Override
     public AiExplanationResponse getExplanation(Long wordMeaningId, String word) {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -109,6 +115,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         return aiResponse;
     }
 
+    /**
+     * Trả lời chat tự do hoặc sinh deck theo chủ đề nếu người dùng yêu cầu.
+     */
     @Override
     public String chat(String question) {
         try {
@@ -134,6 +143,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         }
     }
 
+    /**
+     * Tách chủ đề từ câu hỏi nếu người dùng yêu cầu tạo bộ bài theo chủ đề.
+     */
     private String extractRequestedTopic(String question) {
         if (question == null) {
             return null;
@@ -161,6 +173,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         return topic.isEmpty() ? null : topic;
     }
 
+    /**
+     * Sinh một deck mới theo chủ đề và lưu các từ gợi ý đi kèm.
+     */
     @Transactional
     private DeckEntity createDeckByTopic(String topic, UserEntity currentUser) {
         DeckEntity newDeck = new DeckEntity();
@@ -206,6 +221,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         return newDeck;
     }
 
+    /**
+     * Lấy hoặc tạo vocabulary, đồng thời đảm bảo có audio URL.
+     */
     private VocabularyEntity getOrCreateVocabulary(String english, Map<String, VocabularyEntity> vocabCache) {
         String normalized = english == null ? "" : english.trim();
         if (normalized.isEmpty()) {
@@ -236,6 +254,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         return vocab;
     }
 
+    /**
+     * Đảm bảo vocabulary có audio URL, nếu thiếu thì tạo bằng TTS và upload Cloudinary.
+     */
     private void ensureAudioUrl(VocabularyEntity vocab, String englishWord) {
         if (vocab.getAudioUrl() != null && !vocab.getAudioUrl().isBlank()) {
             return;
@@ -252,10 +273,16 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         }
     }
 
+    /**
+     * Chuẩn hóa chuỗi để dùng làm publicId an toàn trên Cloudinary.
+     */
     private String sanitize(String raw) {
         return raw.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_\\-]+", "_");
     }
 
+    /**
+     * Gọi Gemini để sinh danh sách từ theo chủ đề và parse kết quả JSON.
+     */
     private List<TopicWord> generateTopicWords(String topic) {
         String prompt = "Bạn là trợ lý tạo bộ từ vựng. Hãy trả về JSON array gồm đúng 10 phần tử cho chủ đề '"
                 + topic
@@ -271,6 +298,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         }
     }
 
+    /**
+     * Lọc kết quả Gemini để chỉ giữ các cặp từ hợp lệ, không trùng lặp.
+     */
     private List<TopicWord> sanitizeTopicWords(TopicWord[] parsed, String topic) {
         if (parsed == null || parsed.length == 0) {
             return fallbackTopicWords(topic);
@@ -301,6 +331,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         return new ArrayList<>(unique.values());
     }
 
+    /**
+     * Trả về bộ từ dự phòng nếu Gemini không trả đúng JSON hoặc dữ liệu rỗng.
+     */
     private List<TopicWord> fallbackTopicWords(String topic) {
         String lowerTopic = topic == null ? "" : topic.toLowerCase(Locale.ROOT);
         if (lowerTopic.contains("du lich") || lowerTopic.contains("du lịch") || lowerTopic.contains("travel")) {
@@ -335,16 +368,16 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
     private record TopicWord(String english, String vietnamese) {
     }
 
-    // Hàm phụ trợ gọi HTTP Request tới Google Gemini
+    /**
+     * Gọi Gemini để nhận về JSON mô tả nghĩa, giải thích và ví dụ cho một từ.
+     */
     private AiExplanationResponse callGeminiApi(String word) {
-        // Tạo prompt để AI trả về JSON
         String prompt = "Explain the meaning of the word '" + word + "' in Vietnamese. Provide a response in JSON format with keys: 'meaning' (Vietnamese meaning), 'explanation' (detailed explanation in Vietnamese), 'example' (an example sentence in English).";
 
         try {
             ObjectMapper mapper = new ObjectMapper();
             String text = callGeminiForText(prompt, true);
 
-            // Gemini có thể bọc JSON bằng markdown code fence (```json ... ```)
             String cleanedText = text == null ? "" : text.trim();
             if (cleanedText.startsWith("```")) {
                 int firstNewline = cleanedText.indexOf('\n');
@@ -356,7 +389,6 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
                 }
             }
 
-            // Parse text as JSON (vì prompt yêu cầu JSON)
             AiExplanationResponse aiResponse = mapper.readValue(cleanedText, AiExplanationResponse.class);
 
             return aiResponse;
@@ -371,6 +403,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         }
     }
 
+    /**
+     * Gửi prompt lên Gemini, có cơ chế fallback sang model khác nếu cần.
+     */
     private String callGeminiForText(String prompt, boolean allowFallback) {
         RestTemplate restTemplate = createRestTemplate();
 
@@ -425,6 +460,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         }
     }
 
+    /**
+     * Tạo RestTemplate với timeout ngắn để tránh treo request quá lâu.
+     */
     private RestTemplate createRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(8000);
@@ -432,6 +470,9 @@ public class GeminiAPIServiceImpl implements GeminiAPIService {
         return new RestTemplate(factory);
     }
 
+    /**
+     * Loại bỏ markdown code fence nếu Gemini trả về JSON bọc trong ```.
+     */
     private String normalizeGeminiText(String text) {
         String cleanedText = text == null ? "" : text.trim();
         if (cleanedText.startsWith("```")) {

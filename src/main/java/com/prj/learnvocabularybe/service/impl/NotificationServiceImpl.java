@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Cài đặt các nghiệp vụ thông báo và cài đặt nhắc học của người dùng.
+ */
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
@@ -23,6 +26,9 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserRepository userRepository;
     private final SecurityUtil securityUtil;
 
+    /**
+     * Lấy trạng thái cài đặt hiện tại và số thông báo chưa đọc.
+     */
     @Override
     public NotificationSettingsResponse getSettings() {
         UserEntity user = securityUtil.getCurrentUser();
@@ -30,6 +36,9 @@ public class NotificationServiceImpl implements NotificationService {
         return toSettingsResponse(user, unreadCount);
     }
 
+    /**
+     * Cập nhật trạng thái bật/tắt hoặc giờ nhắc học của người dùng.
+     */
     @Override
     @Transactional
     public NotificationSettingsResponse updateSettings(NotificationSettingsRequest request) {
@@ -50,6 +59,9 @@ public class NotificationServiceImpl implements NotificationService {
         return toSettingsResponse(user, unreadCount);
     }
 
+    /**
+     * Lấy tối đa 20 thông báo gần nhất của người dùng.
+     */
     @Override
     public List<NotificationResponse> getMyNotifications() {
         UserEntity user = securityUtil.getCurrentUser();
@@ -60,6 +72,9 @@ public class NotificationServiceImpl implements NotificationService {
                 .toList();
     }
 
+    /**
+     * Đánh dấu một thông báo là đã đọc, có kiểm tra quyền sở hữu.
+     */
     @Override
     @Transactional
     public void markAsRead(Long notificationId) {
@@ -76,6 +91,9 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.save(notification);
     }
 
+    /**
+     * Đánh dấu toàn bộ thông báo của người dùng là đã đọc.
+     */
     @Override
     @Transactional
     public void markAllAsRead() {
@@ -85,7 +103,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Kiểm tra định dạng giờ hợp lệ (HH:mm) */
+    /**
+     * Kiểm tra định dạng giờ hợp lệ theo mẫu HH:mm.
+     */
     private void validateTimeFormat(String time) {
         if (!time.matches("^([01]\\d|2[0-3]):[0-5]\\d$")) {
             throw new IllegalArgumentException(
